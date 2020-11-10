@@ -7,7 +7,7 @@
 ; when you change it all users will automatically get updated.
 [please]
 version = 15.7.1
-versionchecksum = 38b80cc076c22eeea9e936a9ab4ec58b7c6c6f67cf8ff50d51b17d91fa01cd9a
+versionchecksum = 9a56c596d6ab2068a7d8b9f7559fb3eb16e0c20059ef272fd51a3bd23e8edfbc
 
 [buildconfig]
 default-docker-repo = hub.docker.com
@@ -19,7 +19,7 @@ sandbox = false
 
 
 [go]
-importpath = github.com/thought-machine/aws-quotas-exporter
+importpath = github.com/thought-machine/aws-service-quotas-exporter
 gopath = $TMP_DIR:$TMP_DIR/third_party/go:$TMP_DIR/third_party/go/kubernetes
 ; DefaultStatic = false
 ; CgoCCTool = /usr/local/musl/bin/musl-gcc

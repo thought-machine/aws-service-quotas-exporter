@@ -1,7 +1,7 @@
 subinclude("///third_party/subrepos/pleasings//docker")
 
 go_binary(
-    name = "aws-quotas-exporter",
+    name = "aws-service-quotas-exporter",
     srcs = ["main.go"],
     static = False,
     deps = [
@@ -14,10 +14,10 @@ go_binary(
 docker_image(
     name = "aws-quotas-exporter_alpine",
     srcs = [
-        ":aws-quotas-exporter",
+        ":aws-service-quotas-exporter",
     ],
-    dockerfile = "Dockerfile-aws-quotas-exporter",
-    image = "aws-quotas-exporter",
+    dockerfile = "Dockerfile-aws-service-quotas-exporter",
+    image = "aws-service-quotas-exporter",
     visibility = [
         "//k8s",
     ],
