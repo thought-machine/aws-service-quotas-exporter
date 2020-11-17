@@ -786,3 +786,34 @@ go_get(
         "1fc5497a6bbfeaac4c186026faf071e2a413c58c90d468e890109403934e561f",
     ],
 )
+
+go_get(
+    name = "go-jmespath",
+    get = "github.com/jmespath/go-jmespath",
+    licences = ["apache-2.0"],
+    revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9",
+    strip = ["fuzz"],
+    hashes = [
+        "75b4d4b4744e57f4c374b831260ddaa947c4df98192f15c9a17273c2f470d564",
+    ],
+)
+
+go_get(
+    name = "aws-sdk-go",
+    get = "github.com/aws/aws-sdk-go/...",
+    install = [
+        "aws/...",
+        "internal/...",
+        "private/...",
+        "service/...",
+    ],
+    licences = ["apache-2.0"],
+    revision = "v1.33.5",
+    deps = [
+        ":go-jmespath",
+        ":x_net",
+    ],
+    hashes = [
+        "4875551fc9014ed71eb28ebc7e95f2526e46cec45d91b0f8368f4b0e35837db3",
+    ],
+)
