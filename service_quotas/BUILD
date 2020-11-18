@@ -15,7 +15,7 @@ go_test(
     name = "test",
     srcs = glob(["*_test.go"]),
     deps = [
-        ":service_quotas",
+        ":servicequotas",
         "//third_party/go:testify",
     ],
 )
