@@ -88,7 +88,7 @@ func NewServiceQuotas(region, profile string, usageChecks ...QuotaUsageCheck) (Q
 	quotasService := servicequotas.New(awsSession, aws.NewConfig().WithRegion(region))
 
 	quotas := &ServiceQuotas{
-		Session:       awsSession,
+		session:       awsSession,
 		region:        region,
 		quotasService: quotasService,
 		usageChecks:   codeToUsageChecks,
