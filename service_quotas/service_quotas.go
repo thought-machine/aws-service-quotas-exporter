@@ -1,4 +1,4 @@
-package service_quotas
+package servicequotas
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
@@ -8,8 +8,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Errors returned from this package
 var (
-	InvalidRegionError = errors.New("invalid region")
+	ErrInvalidRegion = errors.New("invalid region")
 )
 
 // QuotaUsageCheck is an interface for retrieving usage for a service quota
@@ -34,38 +35,38 @@ type QuotaUsage struct {
 	// Name is the name of the resource, eg. the ID of the VPC or
 	// the same as the description for single-resource quotas
 	// (eg. VPCs per region)
-	Name        string
+	Name string
 	// Description is the name of the service quota (eg. "Inbound
 	// or outbound rules per security group")
 	Description string
 	// Usage is the current service quota usage
-	Usage       float64
+	Usage float64
 	// Quota is the current quota
-	Quota       float64
+	Quota float64
 }
 
-// ServiceQuotas
+// ServiceQuotas is an implementation for retrieving service quotas
+// and their limits using the `QuotaUsageCheck`s
 type ServiceQuotas struct {
-	// Session is the aws `session.Session`
-	Session       *session.Session
+	session       *session.Session
 	region        string
 	quotasService *servicequotas.ServiceQuotas
 	// maps quota codes to quota limits
 	usageChecks map[string]QuotaUsageCheck
 }
 
-// ServiceQuotasInterface is an interface for retrieving AWS service
+// QuotasInterface is an interface for retrieving AWS service
 // quotas and usage
-type ServiceQuotasInterface interface {
+type QuotasInterface interface {
 	QuotasAndUsage() ([]QuotaUsage, error)
 }
 
 // NewServiceQuotas creates a ServiceQuotas for `region` and `profile`
 // with `usageChecks` or returns an error. Note that the ServiceQuotas
 // will only return usage and quotas for the usageChecks passed here
-func NewServiceQuotas(region, profile string, usageChecks ...QuotaUsageCheck) (ServiceQuotasInterface, error) {
+func NewServiceQuotas(region, profile string, usageChecks ...QuotaUsageCheck) (QuotasInterface, error) {
 	if !isValidRegion(region) {
-		return nil, errors.Wrapf(InvalidRegionError, "failed to create ServiceQuotas: %w")
+		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas: %w")
 	}
 
 	opts := session.Options{}
@@ -106,29 +107,32 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 
 	var usageErr error
 
-	s.quotasService.ListServiceQuotasPages(&servicequotas.ListServiceQuotasInput{ServiceCode: aws.String("vpc")}, func(page *servicequotas.ListServiceQuotasOutput, lastPage bool) bool {
-		for _, quota := range page.Quotas {
-			if check, ok := s.usageChecks[*quota.QuotaCode]; ok {
-				usage, err := check.Usage(s.Session, aws.NewConfig().WithRegion(s.region))
-				if err != nil {
-					usageErr = err
-					// stop paging when an error is encountered
-					return true
-				}
-
-				for name, usage := range usage {
-					quotaUsage := QuotaUsage{
-						Name:        name,
-						Description: check.Name(),
-						Usage:       usage,
-						Quota:       *quota.Value,
+	params := &servicequotas.ListServiceQuotasInput{ServiceCode: aws.String("vpc")}
+	s.quotasService.ListServiceQuotasPages(params,
+		func(page *servicequotas.ListServiceQuotasOutput, lastPage bool) bool {
+			for _, quota := range page.Quotas {
+				if check, ok := s.usageChecks[*quota.QuotaCode]; ok {
+					usage, err := check.Usage(s.session, aws.NewConfig().WithRegion(s.region))
+					if err != nil {
+						usageErr = err
+						// stop paging when an error is encountered
+						return true
 					}
-					quotaUsages = append(quotaUsages, quotaUsage)
+
+					for name, usage := range usage {
+						quotaUsage := QuotaUsage{
+							Name:        name,
+							Description: check.Name(),
+							Usage:       usage,
+							Quota:       *quota.Value,
+						}
+						quotaUsages = append(quotaUsages, quotaUsage)
+					}
 				}
 			}
-		}
-		return !lastPage
-	})
+			return !lastPage
+		},
+	)
 
 	if usageErr != nil {
 		return nil, usageErr

@@ -1,4 +1,4 @@
-package service_quotas
+package servicequotas
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
@@ -10,6 +10,7 @@ import (
 
 const serviceName = "vpc"
 
+// Errors returned from this package
 var (
 	ErrFailedToGetUsage = errors.New("failed to get usage")
 )
@@ -20,23 +21,32 @@ func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
 	return ec2.New(c, cfgs...)
 }
 
+// All the usage limits checks in this file are reported under the
+// `vpc` `ServiceCode` by the AWS Service Quotas
+
 // RulesPerSecurityGroupUsage checks the usage for the "Inbound or
 // outbound rules per security group" quota
 type RulesPerSecurityGroupUsage struct {
 }
 
+// Code is the AWS service quotas code
 func (u *RulesPerSecurityGroupUsage) Code() string {
 	return "L-0EA8095F"
 }
 
+// Name is the name of the service quota
 func (u *RulesPerSecurityGroupUsage) Name() string {
 	return "Inbound or outbound rules per security group"
 }
 
+// ServiceName is the name of the service as reported by the service
+// quotas service
 func (u *RulesPerSecurityGroupUsage) ServiceName() string {
 	return serviceName
 }
 
+// Usage returns a map of security group IDs and the sum of their
+// inbound and outbound rules or an error
 func (u *RulesPerSecurityGroupUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
 	usage := map[string]float64{}
 
@@ -72,18 +82,24 @@ func (u *RulesPerSecurityGroupUsage) Usage(c client.ConfigProvider, cfgs ...*aws
 type SecurityGroupsPerENIUsage struct {
 }
 
+// Code is the AWS service quotas code
 func (u *SecurityGroupsPerENIUsage) Code() string {
 	return "L-2AFB9258"
 }
 
+// Name is the name of the service quota
 func (u *SecurityGroupsPerENIUsage) Name() string {
 	return "Security groups per network interface"
 }
 
+// ServiceName is the name of the service as reported by the service
+// quotas service
 func (u *SecurityGroupsPerENIUsage) ServiceName() string {
 	return serviceName
 }
 
+// Usage returns a map of Elastic Network Interface IDs and the number
+// of security groups for each network interface or an error
 func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
 	usage := map[string]float64{}
 
@@ -112,18 +128,24 @@ func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.
 type SecurityGroupsPerRegionUsage struct {
 }
 
+// Code is the AWS service quotas code
 func (u *SecurityGroupsPerRegionUsage) Code() string {
 	return "L-E79EC296"
 }
 
+// Name is the name of the service quota
 func (u *SecurityGroupsPerRegionUsage) Name() string {
 	return "VPC security groups per Region"
 }
 
+// ServiceName is the name of the service as reported by the service
+// quotas service
 func (u *SecurityGroupsPerRegionUsage) ServiceName() string {
 	return serviceName
 }
 
+// Usage returns a map of the service quota name for that service (see
+// the `Name` method) and the number of security groups or an error
 func (u *SecurityGroupsPerRegionUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
 	numGroups := 0
 

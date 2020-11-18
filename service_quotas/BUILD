@@ -1,5 +1,5 @@
 go_library(
-    name = "service_quotas",
+    name = "servicequotas",
     srcs = glob(
         ["*.go"],
         exclude = ["*_test.go"],
