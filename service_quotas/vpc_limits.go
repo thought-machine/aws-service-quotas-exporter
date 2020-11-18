@@ -44,14 +44,16 @@ func (u *RulesPerSecurityGroupUsage) Usage(c client.ConfigProvider, cfgs ...*aws
 
 	securityGroups := []*ec2.SecurityGroup{}
 	params := &ec2.DescribeSecurityGroupsInput{}
-	err := ec2Service.DescribeSecurityGroupsPages(params, func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
-		if page != nil {
-			for _, group := range page.SecurityGroups {
-				securityGroups = append(securityGroups, group)
+	err := ec2Service.DescribeSecurityGroupsPages(params,
+		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
+			if page != nil {
+				for _, group := range page.SecurityGroups {
+					securityGroups = append(securityGroups, group)
+				}
 			}
-		}
-		return !lastPage
-	})
+			return !lastPage
+		},
+	)
 	if err != nil {
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
@@ -83,7 +85,26 @@ func (u *SecurityGroupsPerENIUsage) ServiceName() string {
 }
 
 func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
-	return nil, nil
+	usage := map[string]float64{}
+
+	ec2Service := newEC2Service(c, cfgs...)
+	params := &ec2.DescribeNetworkInterfacesInput{}
+	err := ec2Service.DescribeNetworkInterfacesPages(params,
+		func(page *ec2.DescribeNetworkInterfacesOutput, lastPage bool) bool {
+			if page != nil {
+				for _, eni := range page.NetworkInterfaces {
+					numSecurityGroups := len(eni.Groups)
+					usage[*eni.NetworkInterfaceId] = float64(numSecurityGroups)
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	return usage, nil
 }
 
 // SecurityGroupsPerRegionUsage checks the usage for the "VPC security
@@ -104,5 +125,23 @@ func (u *SecurityGroupsPerRegionUsage) ServiceName() string {
 }
 
 func (u *SecurityGroupsPerRegionUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
-	return nil, nil
+	numGroups := 0
+
+	ec2Service := newEC2Service(c, cfgs...)
+
+	params := &ec2.DescribeSecurityGroupsInput{}
+	err := ec2Service.DescribeSecurityGroupsPages(params,
+		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
+			if page != nil {
+				numGroups += len(page.SecurityGroups)
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	usage := map[string]float64{u.Name(): float64(numGroups)}
+	return usage, nil
 }
