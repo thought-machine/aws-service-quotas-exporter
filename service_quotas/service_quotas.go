@@ -2,6 +2,7 @@ package servicequotas
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/servicequotas"
@@ -14,21 +15,14 @@ var (
 	ErrFailedToGetUsage = errors.New("failed to get usage")
 )
 
-// QuotaUsageCheck is an interface for retrieving usage for a service quota
-type QuotaUsageCheck interface {
-	// Code returns the service quota code, eg. "L-0EA8095F"
-	Code() string
-	// Name returns the name of the servie quota, eg. "Inbound or
-	// outbound rules per security group"
-	Name() string
-	// ServiceName returns the name of the service as reported by
-	// the service quotas, eg. "vpc"
-	ServiceName() string
-	// Usage returns a map of the usage per resource, for example
-	// the usage per security group ID ("i-secgrpid": xx) or in case
-	// were there is a single resource like for VPCs per region it
-	// returns a map with a single entry ("name": xx)
-	Usage(awsSession *session.Session, cfgs ...*aws.Config) (map[string]float64, error)
+type usageCheck func(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error)
+
+func newUsageChecks() map[string]usageCheck {
+	return map[string]usageCheck{
+		"L-0EA8095F": RulesPerSecurityGroupUsage,
+		"L-2AFB9258": SecurityGroupsPerENIUsage,
+		"L-E79EC296": SecurityGroupsPerRegionUsage,
+	}
 }
 
 // QuotaUsage represents service quota usage
@@ -47,13 +41,11 @@ type QuotaUsage struct {
 }
 
 // ServiceQuotas is an implementation for retrieving service quotas
-// and their limits using the `QuotaUsageCheck`s
+// and their limits
 type ServiceQuotas struct {
 	session       *session.Session
 	region        string
 	quotasService *servicequotas.ServiceQuotas
-	// maps quota codes to quota limits
-	usageChecks map[string]QuotaUsageCheck
 }
 
 // QuotasInterface is an interface for retrieving AWS service
@@ -63,9 +55,9 @@ type QuotasInterface interface {
 }
 
 // NewServiceQuotas creates a ServiceQuotas for `region` and `profile`
-// with `usageChecks` or returns an error. Note that the ServiceQuotas
-// will only return usage and quotas for the usageChecks passed here
-func NewServiceQuotas(region, profile string, usageChecks ...QuotaUsageCheck) (QuotasInterface, error) {
+// or returns an error. Note that the ServiceQuotas will only return
+// usage and quotas for the service quotas with implemented usage checks
+func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
 	if !isValidRegion(region) {
 		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas: %w")
 	}
@@ -80,18 +72,12 @@ func NewServiceQuotas(region, profile string, usageChecks ...QuotaUsageCheck) (Q
 		return nil, err
 	}
 
-	codeToUsageChecks := map[string]QuotaUsageCheck{}
-	for _, usageCheck := range usageChecks {
-		codeToUsageChecks[usageCheck.Code()] = usageCheck
-	}
-
 	quotasService := servicequotas.New(awsSession, aws.NewConfig().WithRegion(region))
 
 	quotas := &ServiceQuotas{
 		session:       awsSession,
 		region:        region,
 		quotasService: quotasService,
-		usageChecks:   codeToUsageChecks,
 	}
 	return quotas, nil
 }
@@ -104,30 +90,26 @@ func isValidRegion(region string) bool {
 
 // QuotasAndUsage returns a slice of `QuotaUsage` or an error
 func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
-	quotaUsages := []QuotaUsage{}
+	allQuotaUsages := []QuotaUsage{}
+	usageChecks := newUsageChecks()
 
 	var usageErr error
 
-	params := &servicequotas.ListServiceQuotasInput{ServiceCode: aws.String("vpc")}
+	params := &servicequotas.ListServiceQuotasInput{}
 	s.quotasService.ListServiceQuotasPages(params,
 		func(page *servicequotas.ListServiceQuotasOutput, lastPage bool) bool {
 			for _, quota := range page.Quotas {
-				if check, ok := s.usageChecks[*quota.QuotaCode]; ok {
-					usage, err := check.Usage(s.session, aws.NewConfig().WithRegion(s.region))
+				if check, ok := usageChecks[*quota.QuotaCode]; ok {
+					quotaUsages, err := check(s.session, aws.NewConfig().WithRegion(s.region))
 					if err != nil {
 						usageErr = err
 						// stop paging when an error is encountered
 						return true
 					}
 
-					for name, usage := range usage {
-						quotaUsage := QuotaUsage{
-							Name:        name,
-							Description: check.Name(),
-							Usage:       usage,
-							Quota:       *quota.Value,
-						}
-						quotaUsages = append(quotaUsages, quotaUsage)
+					for _, quotaUsage := range quotaUsages {
+						quotaUsage.Quota = *quota.Value
+						allQuotaUsages = append(allQuotaUsages, quotaUsage)
 					}
 				}
 			}
@@ -139,5 +121,5 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 		return nil, usageErr
 	}
 
-	return quotaUsages, nil
+	return allQuotaUsages, nil
 }

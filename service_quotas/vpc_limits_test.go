@@ -41,8 +41,7 @@ func TestRulesPerSecurityGroupUsageWithError(t *testing.T) {
 		return mockClient
 	}
 
-	usageCheck := &RulesPerSecurityGroupUsage{}
-	usage, err := usageCheck.Usage(nil)
+	usage, err := RulesPerSecurityGroupUsage(nil)
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -53,12 +52,12 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 	testCases := []struct {
 		name           string
 		securityGroups []*ec2.SecurityGroup
-		expectedUsage  map[string]float64
+		expectedUsage  []QuotaUsage
 	}{
 		{
 			name:           "WithNoSecurityGroups",
 			securityGroups: []*ec2.SecurityGroup{},
-			expectedUsage:  map[string]float64{},
+			expectedUsage:  []QuotaUsage{},
 		},
 		{
 			name: "WithSecurityGroups",
@@ -84,9 +83,17 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 					},
 				},
 			},
-			expectedUsage: map[string]float64{
-				"somegroupid":    float64(0),
-				"groupwithrules": float64(2),
+			expectedUsage: []QuotaUsage{
+				{
+					Name:        "somegroupid",
+					Description: rulesPerSecGrpDesc,
+					Usage:       0,
+				},
+				{
+					Name:        "groupwithrules",
+					Description: rulesPerSecGrpDesc,
+					Usage:       2,
+				},
 			},
 		},
 	}
@@ -106,8 +113,7 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 				return mockClient
 			}
 
-			usageCheck := &RulesPerSecurityGroupUsage{}
-			usage, err := usageCheck.Usage(nil)
+			usage, err := RulesPerSecurityGroupUsage(nil)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)
@@ -127,8 +133,7 @@ func TestSecurityGroupsPerENIUsageWithError(t *testing.T) {
 		return mockClient
 	}
 
-	usageCheck := &SecurityGroupsPerENIUsage{}
-	usage, err := usageCheck.Usage(nil)
+	usage, err := SecurityGroupsPerENIUsage(nil)
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -139,12 +144,12 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 	testCases := []struct {
 		name              string
 		networkInterfaces []*ec2.NetworkInterface
-		expectedUsage     map[string]float64
+		expectedUsage     []QuotaUsage
 	}{
 		{
 			name:              "WithNoNetworkInterfaces",
 			networkInterfaces: []*ec2.NetworkInterface{},
-			expectedUsage:     map[string]float64{},
+			expectedUsage:     []QuotaUsage{},
 		},
 		{
 			name: "WithNetworkInterfaces",
@@ -163,7 +168,13 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 					},
 				},
 			},
-			expectedUsage: map[string]float64{"someeni": float64(2)},
+			expectedUsage: []QuotaUsage{
+				{
+					Name:        "someeni",
+					Description: secGroupsPerENIDesc,
+					Usage:       2,
+				},
+			},
 		},
 	}
 
@@ -182,8 +193,7 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 				return mockClient
 			}
 
-			usageCheck := &SecurityGroupsPerENIUsage{}
-			usage, err := usageCheck.Usage(nil)
+			usage, err := SecurityGroupsPerENIUsage(nil)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)
@@ -203,8 +213,7 @@ func TestSecurityGroupsPerRegionUsageWithError(t *testing.T) {
 		return mockClient
 	}
 
-	usageCheck := &SecurityGroupsPerRegionUsage{}
-	usage, err := usageCheck.Usage(nil)
+	usage, err := SecurityGroupsPerRegionUsage(nil)
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -215,12 +224,18 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 	testCases := []struct {
 		name           string
 		securityGroups []*ec2.SecurityGroup
-		expectedUsage  map[string]float64
+		expectedUsage  []QuotaUsage
 	}{
 		{
 			name:           "WithNoSecurityGroups",
 			securityGroups: []*ec2.SecurityGroup{},
-			expectedUsage:  map[string]float64{"VPC security groups per Region": 0},
+			expectedUsage: []QuotaUsage{
+				{
+					Name: securityGroupsPerRegionDesc,
+					Description: securityGroupsPerRegionDesc,
+					Usage: 0,
+				},
+			},
 		},
 		{
 			name: "WithSecurityGroups",
@@ -232,7 +247,13 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 					GroupId: aws.String("anothergroupid"),
 				},
 			},
-			expectedUsage: map[string]float64{"VPC security groups per Region": 2},
+			expectedUsage: []QuotaUsage{
+				{
+					Name: securityGroupsPerRegionDesc,
+					Description: securityGroupsPerRegionDesc,
+					Usage: 2,
+				},
+			},
 		},
 	}
 
@@ -251,8 +272,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 				return mockClient
 			}
 
-			usageCheck := &SecurityGroupsPerRegionUsage{}
-			usage, err := usageCheck.Usage(nil)
+			usage, err := SecurityGroupsPerRegionUsage(nil)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)

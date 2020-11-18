@@ -8,9 +8,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-const serviceName = "vpc"
-
 var newEC2Service = ec2New
+
+const (
+	rulesPerSecGrpDesc          = "Inbound or outbound rules per security group"
+	secGroupsPerENIDesc         = "Security groups per network interface"
+	securityGroupsPerRegionDesc = "VPC security groups per Region"
+)
 
 func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
 	return ec2.New(c, cfgs...)
@@ -19,31 +23,11 @@ func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
 // All the usage limits checks in this file are reported under the
 // `vpc` `ServiceCode` by the AWS Service Quotas
 
-// RulesPerSecurityGroupUsage checks the usage for the "Inbound or
-// outbound rules per security group" quota
-type RulesPerSecurityGroupUsage struct {
-}
-
-// Code is the AWS service quotas code
-func (u *RulesPerSecurityGroupUsage) Code() string {
-	return "L-0EA8095F"
-}
-
-// Name is the name of the service quota
-func (u *RulesPerSecurityGroupUsage) Name() string {
-	return "Inbound or outbound rules per security group"
-}
-
-// ServiceName is the name of the service as reported by the service
-// quotas service
-func (u *RulesPerSecurityGroupUsage) ServiceName() string {
-	return serviceName
-}
-
-// Usage returns a map of security group IDs and the sum of their
-// inbound and outbound rules or an error
-func (u *RulesPerSecurityGroupUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
-	usage := map[string]float64{}
+// RulesPerSecurityGroupUsage returns the usage for each security
+// group ID with the usage value being the sum of their inbound and
+// outbound rules or an error
+func RulesPerSecurityGroupUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	quotaUsages := []QuotaUsage{}
 
 	ec2Service := newEC2Service(c, cfgs...)
 
@@ -66,37 +50,22 @@ func (u *RulesPerSecurityGroupUsage) Usage(c client.ConfigProvider, cfgs ...*aws
 	for _, securityGroup := range securityGroups {
 		inboundRules := len(securityGroup.IpPermissions)
 		outboundRules := len(securityGroup.IpPermissionsEgress)
-		usage[*securityGroup.GroupId] = float64(inboundRules + outboundRules)
+		quotaUsage := QuotaUsage{
+			Name:        *securityGroup.GroupId,
+			Description: rulesPerSecGrpDesc,
+			Usage:       float64(inboundRules + outboundRules),
+		}
+		quotaUsages = append(quotaUsages, quotaUsage)
 	}
 
-	return usage, nil
+	return quotaUsages, nil
 }
 
-// SecurityGroupsPerENIUsage checks the usage for the "Security groups
-// per network interface" quota
-type SecurityGroupsPerENIUsage struct {
-}
-
-// Code is the AWS service quotas code
-func (u *SecurityGroupsPerENIUsage) Code() string {
-	return "L-2AFB9258"
-}
-
-// Name is the name of the service quota
-func (u *SecurityGroupsPerENIUsage) Name() string {
-	return "Security groups per network interface"
-}
-
-// ServiceName is the name of the service as reported by the service
-// quotas service
-func (u *SecurityGroupsPerENIUsage) ServiceName() string {
-	return serviceName
-}
-
-// Usage returns a map of Elastic Network Interface IDs and the number
-// of security groups for each network interface or an error
-func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
-	usage := map[string]float64{}
+// SecurityGroupsPerENIUsage returns usage for each Elastic Network
+// Interface ID with the usage value being the number of security groups
+// for each ENI
+func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	quotaUsages := []QuotaUsage{}
 
 	ec2Service := newEC2Service(c, cfgs...)
 	params := &ec2.DescribeNetworkInterfacesInput{}
@@ -104,8 +73,12 @@ func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.
 		func(page *ec2.DescribeNetworkInterfacesOutput, lastPage bool) bool {
 			if page != nil {
 				for _, eni := range page.NetworkInterfaces {
-					numSecurityGroups := len(eni.Groups)
-					usage[*eni.NetworkInterfaceId] = float64(numSecurityGroups)
+					usage := QuotaUsage{
+						Name: *eni.NetworkInterfaceId,
+						Description: secGroupsPerENIDesc,
+						Usage: float64(len(eni.Groups)),
+					}
+					quotaUsages = append(quotaUsages, usage)
 				}
 			}
 			return !lastPage
@@ -115,33 +88,13 @@ func (u *SecurityGroupsPerENIUsage) Usage(c client.ConfigProvider, cfgs ...*aws.
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
 
-	return usage, nil
+	return quotaUsages, nil
 }
 
-// SecurityGroupsPerRegionUsage checks the usage for the "VPC security
-// groups per Region" quota
-type SecurityGroupsPerRegionUsage struct {
-}
-
-// Code is the AWS service quotas code
-func (u *SecurityGroupsPerRegionUsage) Code() string {
-	return "L-E79EC296"
-}
-
-// Name is the name of the service quota
-func (u *SecurityGroupsPerRegionUsage) Name() string {
-	return "VPC security groups per Region"
-}
-
-// ServiceName is the name of the service as reported by the service
-// quotas service
-func (u *SecurityGroupsPerRegionUsage) ServiceName() string {
-	return serviceName
-}
-
-// Usage returns a map of the service quota name for that service (see
-// the `Name` method) and the number of security groups or an error
-func (u *SecurityGroupsPerRegionUsage) Usage(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]float64, error) {
+// SecurityGroupsPerRegionUsage returns usage for security groups per
+// region as the number of all security groups for the region specified
+// with `cfgs`
+func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
 	numGroups := 0
 
 	ec2Service := newEC2Service(c, cfgs...)
@@ -159,6 +112,12 @@ func (u *SecurityGroupsPerRegionUsage) Usage(c client.ConfigProvider, cfgs ...*a
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
 
-	usage := map[string]float64{u.Name(): float64(numGroups)}
+	usage := []QuotaUsage{
+		{
+			Name: securityGroupsPerRegionDesc,
+			Description: securityGroupsPerRegionDesc,
+			Usage: float64(numGroups),
+		},
+	}
 	return usage, nil
 }
