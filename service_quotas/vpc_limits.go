@@ -10,11 +10,6 @@ import (
 
 const serviceName = "vpc"
 
-// Errors returned from this package
-var (
-	ErrFailedToGetUsage = errors.New("failed to get usage")
-)
-
 var newEC2Service = ec2New
 
 func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {

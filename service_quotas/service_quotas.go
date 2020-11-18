@@ -10,7 +10,8 @@ import (
 
 // Errors returned from this package
 var (
-	ErrInvalidRegion = errors.New("invalid region")
+	ErrInvalidRegion    = errors.New("invalid region")
+	ErrFailedToGetUsage = errors.New("failed to get usage")
 )
 
 // QuotaUsageCheck is an interface for retrieving usage for a service quota
