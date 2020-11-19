@@ -1,71 +1,123 @@
-package service_quotas
+package servicequotas
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/pkg/errors"
 )
 
-const serviceName = "vpc"
+var newEC2Service = ec2New
 
-// RulesPerSecurityGroupUsage checks the usage for the "Inbound or
-// outbound rules per security group" quota
-type RulesPerSecurityGroupUsage struct {
+const (
+	rulesPerSecGrpDesc          = "Inbound or outbound rules per security group"
+	secGroupsPerENIDesc         = "Security groups per network interface"
+	securityGroupsPerRegionDesc = "VPC security groups per Region"
+)
+
+func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
+	return ec2.New(c, cfgs...)
 }
 
-func (u *RulesPerSecurityGroupUsage) Code() string {
-	return "L-0EA8095F"
+// All the usage limits checks in this file are reported under the
+// `vpc` `ServiceCode` by the AWS Service Quotas
+
+// RulesPerSecurityGroupUsage returns the usage for each security
+// group ID with the usage value being the sum of their inbound and
+// outbound rules or an error
+func RulesPerSecurityGroupUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	quotaUsages := []QuotaUsage{}
+
+	ec2Service := newEC2Service(c, cfgs...)
+
+	securityGroups := []*ec2.SecurityGroup{}
+	params := &ec2.DescribeSecurityGroupsInput{}
+	err := ec2Service.DescribeSecurityGroupsPages(params,
+		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
+			if page != nil {
+				for _, group := range page.SecurityGroups {
+					securityGroups = append(securityGroups, group)
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	for _, securityGroup := range securityGroups {
+		inboundRules := len(securityGroup.IpPermissions)
+		outboundRules := len(securityGroup.IpPermissionsEgress)
+		quotaUsage := QuotaUsage{
+			Name:        *securityGroup.GroupId,
+			Description: rulesPerSecGrpDesc,
+			Usage:       float64(inboundRules + outboundRules),
+		}
+		quotaUsages = append(quotaUsages, quotaUsage)
+	}
+
+	return quotaUsages, nil
 }
 
-func (u *RulesPerSecurityGroupUsage) Name() string {
-	return "Inbound or outbound rules per security group"
+// SecurityGroupsPerENIUsage returns usage for each Elastic Network
+// Interface ID with the usage value being the number of security groups
+// for each ENI
+func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	quotaUsages := []QuotaUsage{}
+
+	ec2Service := newEC2Service(c, cfgs...)
+	params := &ec2.DescribeNetworkInterfacesInput{}
+	err := ec2Service.DescribeNetworkInterfacesPages(params,
+		func(page *ec2.DescribeNetworkInterfacesOutput, lastPage bool) bool {
+			if page != nil {
+				for _, eni := range page.NetworkInterfaces {
+					usage := QuotaUsage{
+						Name: *eni.NetworkInterfaceId,
+						Description: secGroupsPerENIDesc,
+						Usage: float64(len(eni.Groups)),
+					}
+					quotaUsages = append(quotaUsages, usage)
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	return quotaUsages, nil
 }
 
-func (u *RulesPerSecurityGroupUsage) ServiceName() string {
-	return serviceName
-}
+// SecurityGroupsPerRegionUsage returns usage for security groups per
+// region as the number of all security groups for the region specified
+// with `cfgs`
+func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	numGroups := 0
 
-func (u *RulesPerSecurityGroupUsage) Usage(awsSession *session.Session, cfgs ...*aws.Config) (map[string]float64, error) {
-	return nil, nil
-}
+	ec2Service := newEC2Service(c, cfgs...)
 
-// SecurityGroupsPerENIUsage checks the usage for the "Security groups
-// per network interface" quota
-type SecurityGroupsPerENIUsage struct {
-}
+	params := &ec2.DescribeSecurityGroupsInput{}
+	err := ec2Service.DescribeSecurityGroupsPages(params,
+		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
+			if page != nil {
+				numGroups += len(page.SecurityGroups)
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
 
-func (u *SecurityGroupsPerENIUsage) Code() string {
-	return "L-2AFB9258"
-}
-
-func (u *SecurityGroupsPerENIUsage) Name() string {
-	return "Security groups per network interface"
-}
-
-func (u *SecurityGroupsPerENIUsage) ServiceName() string {
-	return serviceName
-}
-
-func (u *SecurityGroupsPerENIUsage) Usage(awsSession *session.Session, cfgs ...*aws.Config) (map[string]float64, error) {
-	return nil, nil
-}
-
-// SecurityGroupsPerRegionUsage checks the usage for the "VPC security
-// groups per Region" quota
-type SecurityGroupsPerRegionUsage struct {
-}
-
-func (u *SecurityGroupsPerRegionUsage) Code() string {
-	return "L-E79EC296"
-}
-
-func (u *SecurityGroupsPerRegionUsage) Name() string {
-	return "VPC security groups per Region"
-}
-
-func (u *SecurityGroupsPerRegionUsage) ServiceName() string {
-	return serviceName
-}
-
-func (u *SecurityGroupsPerRegionUsage) Usage(awsSession *session.Session, cfgs ...*aws.Config) (map[string]float64, error) {
-	return nil, nil
+	usage := []QuotaUsage{
+		{
+			Name: securityGroupsPerRegionDesc,
+			Description: securityGroupsPerRegionDesc,
+			Usage: float64(numGroups),
+		},
+	}
+	return usage, nil
 }
