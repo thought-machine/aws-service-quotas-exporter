@@ -14,9 +14,10 @@ import (
 type mockEC2Client struct {
 	ec2iface.EC2API
 
-	err                               error
-	DescribeSecurityGroupsResponse    *ec2.DescribeSecurityGroupsOutput
-	DescribeNetworkInterfacesResponse *ec2.DescribeNetworkInterfacesOutput
+	err                                  error
+	DescribeSecurityGroupsResponse       *ec2.DescribeSecurityGroupsOutput
+	DescribeNetworkInterfacesResponse    *ec2.DescribeNetworkInterfacesOutput
+	DescribeInstancesResponse            *ec2.DescribeInstancesOutput
 }
 
 func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityGroupsInput, fn func(*ec2.DescribeSecurityGroupsOutput, bool) bool) error {
@@ -26,6 +27,11 @@ func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityG
 
 func (m *mockEC2Client) DescribeNetworkInterfacesPages(input *ec2.DescribeNetworkInterfacesInput, fn func(*ec2.DescribeNetworkInterfacesOutput, bool) bool) error {
 	fn(m.DescribeNetworkInterfacesResponse, true)
+	return m.err
+}
+
+func (m *mockEC2Client) DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error {
+	fn(m.DescribeInstancesResponse, true)
 	return m.err
 }
 
@@ -231,9 +237,9 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			securityGroups: []*ec2.SecurityGroup{},
 			expectedUsage: []QuotaUsage{
 				{
-					Name: securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionDesc,
 					Description: securityGroupsPerRegionDesc,
-					Usage: 0,
+					Usage:       0,
 				},
 			},
 		},
@@ -249,9 +255,9 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name: securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionDesc,
 					Description: securityGroupsPerRegionDesc,
-					Usage: 2,
+					Usage:       2,
 				},
 			},
 		},
@@ -278,4 +284,23 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			assert.Equal(t, tc.expectedUsage, usage)
 		})
 	}
+}
+
+func TestStandardSpotInstanceRequestsUsageWithError(t *testing.T) {
+	mockClient := &mockEC2Client{
+		err:                            errors.New("some err"),
+		DescribeSecurityGroupsResponse: nil,
+	}
+
+	origNewEC2Service := newEC2Service
+	defer func() { newEC2Service = origNewEC2Service }()
+	newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
+		return mockClient
+	}
+
+	usage, err := SecurityGroupsPerRegionUsage(nil)
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
+	assert.Nil(t, usage)
 }

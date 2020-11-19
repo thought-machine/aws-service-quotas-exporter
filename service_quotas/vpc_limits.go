@@ -11,17 +11,16 @@ import (
 var newEC2Service = ec2New
 
 const (
-	rulesPerSecGrpDesc          = "Inbound or outbound rules per security group"
-	secGroupsPerENIDesc         = "Security groups per network interface"
-	securityGroupsPerRegionDesc = "VPC security groups per Region"
+	rulesPerSecGrpDesc           = "Rules per security group"
+	secGroupsPerENIDesc          = "Security groups per network interface"
+	securityGroupsPerRegionDesc  = "Security groups per region"
+	spotInstanceRequestsDesc     = "Spot instance requests"
+	onDemandInstanceRequestsDesc = "On-demand instance requests"
 )
 
 func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
 	return ec2.New(c, cfgs...)
 }
-
-// All the usage limits checks in this file are reported under the
-// `vpc` `ServiceCode` by the AWS Service Quotas
 
 // RulesPerSecurityGroupUsage returns the usage for each security
 // group ID with the usage value being the sum of their inbound and
@@ -63,7 +62,7 @@ func RulesPerSecurityGroupUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([
 
 // SecurityGroupsPerENIUsage returns usage for each Elastic Network
 // Interface ID with the usage value being the number of security groups
-// for each ENI
+// for each ENI or an error
 func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
 	quotaUsages := []QuotaUsage{}
 
@@ -74,9 +73,9 @@ func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]
 			if page != nil {
 				for _, eni := range page.NetworkInterfaces {
 					usage := QuotaUsage{
-						Name: *eni.NetworkInterfaceId,
+						Name:        *eni.NetworkInterfaceId,
 						Description: secGroupsPerENIDesc,
-						Usage: float64(len(eni.Groups)),
+						Usage:       float64(len(eni.Groups)),
 					}
 					quotaUsages = append(quotaUsages, usage)
 				}
@@ -93,7 +92,7 @@ func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]
 
 // SecurityGroupsPerRegionUsage returns usage for security groups per
 // region as the number of all security groups for the region specified
-// with `cfgs`
+// with `cfgs` or an error
 func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
 	numGroups := 0
 
@@ -114,9 +113,124 @@ func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) 
 
 	usage := []QuotaUsage{
 		{
-			Name: securityGroupsPerRegionDesc,
+			Name:        securityGroupsPerRegionDesc,
 			Description: securityGroupsPerRegionDesc,
-			Usage: float64(numGroups),
+			Usage:       float64(numGroups),
+		},
+	}
+	return usage, nil
+}
+
+// standardInstancesCPUs returns the number of vCPUs for all standard
+// (A, C, D, H, I, M, R, T, Z) EC2 instances
+// Note that we are working out the number of vCPUs for each instance
+// here because instances can have custom CPU options specified during
+// launch. More information can be found at
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-optimize-cpu.html
+func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int64, error) {
+	var totalvCPUs int64
+
+	filters := []*ec2.Filter{
+		{
+			Name: aws.String("instance-type"),
+			Values: []*string{
+				aws.String("a*"),
+				aws.String("c*"),
+				aws.String("d*"),
+				aws.String("h*"),
+				aws.String("i*"),
+				aws.String("m*"),
+				aws.String("r*"),
+				aws.String("t*"),
+				aws.String("z*"),
+			},
+		},
+		{
+			Name: aws.String("instance-state-name"),
+			Values: []*string{
+				aws.String("pending"),
+				aws.String("running"),
+			},
+		},
+	}
+
+	// According to the AWS docs we should be able to filter
+	// "scheduled" instances as well, but that does not work so we
+	// are using filters only for the spot instances
+	if spotInstances {
+		spotFilter := &ec2.Filter{
+			Name:   aws.String("instance-lifecycle"),
+			Values: []*string{aws.String("spot")},
+		}
+		filters = append(filters, spotFilter)
+	}
+
+	params := &ec2.DescribeInstancesInput{Filters: filters}
+	err := ec2Service.DescribeInstancesPages(params,
+		func(page *ec2.DescribeInstancesOutput, lastPage bool) bool {
+			for _, reservation := range page.Reservations {
+				for _, instance := range reservation.Instances {
+					if !spotInstances && instance.InstanceLifecycle != nil {
+						continue
+					}
+
+					cpuOptions := instance.CpuOptions
+					if cpuOptions.CoreCount != nil && cpuOptions.ThreadsPerCore != nil {
+						numvCPUs := *cpuOptions.CoreCount * *cpuOptions.ThreadsPerCore
+						totalvCPUs += numvCPUs
+					}
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalvCPUs, nil
+}
+
+// StandardSpotInstanceRequestsUsage returns vCPU usage for all
+// standard (A, C, D, H, I, M, R, T, Z) spot instance requests and usage
+// or an error
+// vCPUs are returned instead of the number of images due to the
+// service quota reporting the number of vCPUs
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-limits.html
+func StandardSpotInstanceRequestsUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	ec2Service := newEC2Service(c, cfgs...)
+	cpus, err := standardInstancesCPUs(ec2Service, true)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	usage := []QuotaUsage{
+		{
+			Name:        spotInstanceRequestsDesc,
+			Description: spotInstanceRequestsDesc,
+			Usage:       float64(cpus),
+		},
+	}
+	return usage, nil
+}
+
+// RunningOnDemandStandardInstancesUsage returns vCPU usage for all running
+// on-demand standard (A, C, D, H, I, M, R, T, Z) instances or an error
+// vCPUs are returned instead of the number of images due to the
+// service quota reporting the number of vCPUs
+// https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-limits.html
+func RunningOnDemandStandardInstancesUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+	ec2Service := newEC2Service(c, cfgs...)
+	cpus, err := standardInstancesCPUs(ec2Service, false)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	usage := []QuotaUsage{
+		{
+			Name:        onDemandInstanceRequestsDesc,
+			Description: onDemandInstanceRequestsDesc,
+			Usage:       float64(cpus),
 		},
 	}
 	return usage, nil

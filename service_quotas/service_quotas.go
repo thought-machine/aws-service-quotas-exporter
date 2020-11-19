@@ -22,6 +22,8 @@ func newUsageChecks() map[string]usageCheck {
 		"L-0EA8095F": RulesPerSecurityGroupUsage,
 		"L-2AFB9258": SecurityGroupsPerENIUsage,
 		"L-E79EC296": SecurityGroupsPerRegionUsage,
+		"L-34B43A08": StandardSpotInstanceRequestsUsage,
+		"L-1216C47A": RunningOnDemandStandardInstancesUsage,
 	}
 }
 
