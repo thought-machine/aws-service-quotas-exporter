@@ -10,6 +10,8 @@ import (
 
 var newEC2Service = ec2New
 
+// Not all quota limits here are reported under "ec2", but all of the
+// usage checks are using the ec2 service
 const (
 	rulesPerSecGrpDesc           = "Rules per security group"
 	secGroupsPerENIDesc          = "Security groups per network interface"
