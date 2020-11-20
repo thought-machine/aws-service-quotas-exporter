@@ -14,10 +14,11 @@ import (
 type mockEC2Client struct {
 	ec2iface.EC2API
 
-	err                                  error
-	DescribeSecurityGroupsResponse       *ec2.DescribeSecurityGroupsOutput
-	DescribeNetworkInterfacesResponse    *ec2.DescribeNetworkInterfacesOutput
-	DescribeInstancesResponse            *ec2.DescribeInstancesOutput
+	err                               error
+	DescribeSecurityGroupsResponse    *ec2.DescribeSecurityGroupsOutput
+	DescribeNetworkInterfacesResponse *ec2.DescribeNetworkInterfacesOutput
+	InstancesFilters                  []*ec2.Filter
+	DescribeInstancesResponse         *ec2.DescribeInstancesOutput
 }
 
 func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityGroupsInput, fn func(*ec2.DescribeSecurityGroupsOutput, bool) bool) error {
@@ -31,6 +32,7 @@ func (m *mockEC2Client) DescribeNetworkInterfacesPages(input *ec2.DescribeNetwor
 }
 
 func (m *mockEC2Client) DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error {
+	m.InstancesFilters = input.Filters
 	fn(m.DescribeInstancesResponse, true)
 	return m.err
 }
@@ -286,21 +288,55 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 	}
 }
 
-func TestStandardSpotInstanceRequestsUsageWithError(t *testing.T) {
+func TestStandardInstancesCPUsWithError(t *testing.T) {
 	mockClient := &mockEC2Client{
-		err:                            errors.New("some err"),
-		DescribeSecurityGroupsResponse: nil,
+		err:                       errors.New("some err"),
+		DescribeInstancesResponse: nil,
 	}
 
-	origNewEC2Service := newEC2Service
-	defer func() { newEC2Service = origNewEC2Service }()
-	newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-		return mockClient
-	}
-
-	usage, err := SecurityGroupsPerRegionUsage(nil)
+	cpus, err := standardInstancesCPUs(mockClient, true)
 
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
-	assert.Nil(t, usage)
+	assert.Equal(t, int64(0), cpus)
+}
+
+func TestStandardInstancesCPUsFilters(t *testing.T) {
+	instanceTypeFilter := standardInstanceTypeFilter()
+	instanceStateFilter := activeInstanceFilter()
+
+	testCases := []struct {
+		name            string
+		spotInstances   bool
+		expectedFilters []*ec2.Filter
+	}{
+		{
+			name:          "ForSpotInstances",
+			spotInstances: true,
+			expectedFilters: []*ec2.Filter{
+				instanceTypeFilter,
+				instanceStateFilter,
+				{
+					Name:   aws.String("instance-lifecycle"),
+					Values: []*string{aws.String("spot")},
+				},
+			},
+		},
+		{
+			name:            "ForOnDemandInstances",
+			spotInstances:   false,
+			expectedFilters: []*ec2.Filter{instanceTypeFilter, instanceStateFilter},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockClient := &mockEC2Client{err: nil, DescribeInstancesResponse: nil}
+
+			cpus, err := standardInstancesCPUs(mockClient, tc.spotInstances)
+
+			assert.NoError(t, err)
+			assert.Equal(t, int64(0), cpus)
+			assert.Equal(t, mockClient.InstancesFilters, tc.expectedFilters)
+		})
+	}
 }

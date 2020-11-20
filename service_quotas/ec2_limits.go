@@ -123,6 +123,33 @@ func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) 
 	return usage, nil
 }
 
+func standardInstanceTypeFilter() *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("instance-type"),
+		Values: []*string{
+			aws.String("a*"),
+			aws.String("c*"),
+			aws.String("d*"),
+			aws.String("h*"),
+			aws.String("i*"),
+			aws.String("m*"),
+			aws.String("r*"),
+			aws.String("t*"),
+			aws.String("z*"),
+		},
+	}
+}
+
+func activeInstanceFilter() *ec2.Filter {
+	return &ec2.Filter{
+		Name: aws.String("instance-state-name"),
+		Values: []*string{
+			aws.String("pending"),
+			aws.String("running"),
+		},
+	}
+}
+
 // standardInstancesCPUs returns the number of vCPUs for all standard
 // (A, C, D, H, I, M, R, T, Z) EC2 instances
 // Note that we are working out the number of vCPUs for each instance
@@ -131,30 +158,9 @@ func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) 
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-optimize-cpu.html
 func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int64, error) {
 	var totalvCPUs int64
-
-	filters := []*ec2.Filter{
-		{
-			Name: aws.String("instance-type"),
-			Values: []*string{
-				aws.String("a*"),
-				aws.String("c*"),
-				aws.String("d*"),
-				aws.String("h*"),
-				aws.String("i*"),
-				aws.String("m*"),
-				aws.String("r*"),
-				aws.String("t*"),
-				aws.String("z*"),
-			},
-		},
-		{
-			Name: aws.String("instance-state-name"),
-			Values: []*string{
-				aws.String("pending"),
-				aws.String("running"),
-			},
-		},
-	}
+	instanceTypeFilter := standardInstanceTypeFilter()
+	instanceStateFilter := activeInstanceFilter()
+	filters := []*ec2.Filter{instanceTypeFilter, instanceStateFilter}
 
 	// According to the AWS docs we should be able to filter
 	// "scheduled" instances as well, but that does not work so we
@@ -170,16 +176,19 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 	params := &ec2.DescribeInstancesInput{Filters: filters}
 	err := ec2Service.DescribeInstancesPages(params,
 		func(page *ec2.DescribeInstancesOutput, lastPage bool) bool {
-			for _, reservation := range page.Reservations {
-				for _, instance := range reservation.Instances {
-					if !spotInstances && instance.InstanceLifecycle != nil {
-						continue
-					}
+			if page != nil {
+				for _, reservation := range page.Reservations {
+					for _, instance := range reservation.Instances {
+						// InstanceLifecycle is nil for On-Demand instances
+						if !spotInstances && instance.InstanceLifecycle != nil {
+							continue
+						}
 
-					cpuOptions := instance.CpuOptions
-					if cpuOptions.CoreCount != nil && cpuOptions.ThreadsPerCore != nil {
-						numvCPUs := *cpuOptions.CoreCount * *cpuOptions.ThreadsPerCore
-						totalvCPUs += numvCPUs
+						cpuOptions := instance.CpuOptions
+						if cpuOptions.CoreCount != nil && cpuOptions.ThreadsPerCore != nil {
+							numvCPUs := *cpuOptions.CoreCount * *cpuOptions.ThreadsPerCore
+							totalvCPUs += numvCPUs
+						}
 					}
 				}
 			}
