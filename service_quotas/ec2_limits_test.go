@@ -340,3 +340,44 @@ func TestStandardInstancesCPUsFilters(t *testing.T) {
 		})
 	}
 }
+
+func TestStandardInstancesCPUs(t *testing.T) {
+	mockClient := &mockEC2Client{
+		err: nil,
+		DescribeInstancesResponse: &ec2.DescribeInstancesOutput{
+			Reservations: []*ec2.Reservation{
+				{
+					Instances: []*ec2.Instance{
+						{
+							InstanceLifecycle: aws.String("spot"),
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(4),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+					},
+				},
+				{
+					Instances: []*ec2.Instance{
+						{
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(2),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+						{
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(4),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cpus, err := standardInstancesCPUs(mockClient, false)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), cpus)
+}
