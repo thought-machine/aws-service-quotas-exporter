@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/servicequotas"
+	"github.com/aws/aws-sdk-go/service/servicequotas/servicequotasiface"
 	"github.com/pkg/errors"
 )
 
@@ -55,7 +56,7 @@ type QuotaUsage struct {
 type ServiceQuotas struct {
 	session       *session.Session
 	region        string
-	quotasService *servicequotas.ServiceQuotas
+	quotasService servicequotasiface.ServiceQuotasAPI
 }
 
 // QuotasInterface is an interface for retrieving AWS service
