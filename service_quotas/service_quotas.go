@@ -29,11 +29,11 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
 	ec2Client := ec2.New(c, cfgs...)
 
 	return map[string]UsageCheck{
-		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client},
-		"L-2AFB9258": &SecurityGroupsPerENIUsageCheck{ec2Client},
-		"L-E79EC296": &SecurityGroupsPerRegionUsageCheck{ec2Client},
-		"L-34B43A08": &StandardSpotInstanceRequestsUsageCheck{ec2Client},
-		"L-1216C47A": &RunningOnDemandStandardInstancesUsageCheck{ec2Client},
+		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client, "ec2"},
+		"L-2AFB9258": &SecurityGroupsPerENIUsageCheck{ec2Client, "ec2"},
+		"L-E79EC296": &SecurityGroupsPerRegionUsageCheck{ec2Client, "ec2"},
+		"L-34B43A08": &StandardSpotInstanceRequestsUsageCheck{ec2Client, "ec2"},
+		"L-1216C47A": &RunningOnDemandStandardInstancesUsageCheck{ec2Client, "ec2"},
 	}
 }
 
@@ -43,6 +43,8 @@ type QuotaUsage struct {
 	// the same as the description for single-resource quotas
 	// (eg. VPCs per region)
 	Name string
+	// ServiceName is the AWS service name (eg EC2)
+	ServiceName string
 	// Description is the name of the service quota (eg. "Inbound
 	// or outbound rules per security group")
 	Description string

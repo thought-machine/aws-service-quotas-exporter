@@ -42,7 +42,7 @@ func TestRulesPerSecurityGroupUsageWithError(t *testing.T) {
 		DescribeSecurityGroupsResponse: nil,
 	}
 
-	check := RulesPerSecurityGroupUsageCheck{mockClient}
+	check := RulesPerSecurityGroupUsageCheck{mockClient, "ec2"}
 	usage, err := check.Usage()
 
 	assert.Error(t, err)
@@ -88,11 +88,13 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:        "somegroupid",
+					ServiceName: "ec2",
 					Description: rulesPerSecGrpDesc,
 					Usage:       0,
 				},
 				{
 					Name:        "groupwithrules",
+					ServiceName: "ec2",
 					Description: rulesPerSecGrpDesc,
 					Usage:       2,
 				},
@@ -109,7 +111,7 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 				},
 			}
 
-			check := RulesPerSecurityGroupUsageCheck{mockClient}
+			check := RulesPerSecurityGroupUsageCheck{mockClient, "ec2"}
 			usage, err := check.Usage()
 
 			assert.NoError(t, err)
@@ -124,7 +126,7 @@ func TestSecurityGroupsPerENIUsageWithError(t *testing.T) {
 		DescribeNetworkInterfacesResponse: nil,
 	}
 
-	check := SecurityGroupsPerENIUsageCheck{mockClient}
+	check := SecurityGroupsPerENIUsageCheck{mockClient, "ec2"}
 	usage, err := check.Usage()
 
 	assert.Error(t, err)
@@ -163,6 +165,7 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:        "someeni",
+					ServiceName: "ec2",
 					Description: secGroupsPerENIDesc,
 					Usage:       2,
 				},
@@ -179,7 +182,7 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 				},
 			}
 
-			check := SecurityGroupsPerENIUsageCheck{mockClient}
+			check := SecurityGroupsPerENIUsageCheck{mockClient, "ec2"}
 			usage, err := check.Usage()
 
 			assert.NoError(t, err)
@@ -194,7 +197,7 @@ func TestSecurityGroupsPerRegionUsageWithError(t *testing.T) {
 		DescribeSecurityGroupsResponse: nil,
 	}
 
-	check := SecurityGroupsPerRegionUsageCheck{mockClient}
+	check := SecurityGroupsPerRegionUsageCheck{mockClient, "ec2"}
 	usage, err := check.Usage()
 
 	assert.Error(t, err)
@@ -214,6 +217,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:        securityGroupsPerRegionDesc,
+					ServiceName: "ec2",
 					Description: securityGroupsPerRegionDesc,
 					Usage:       0,
 				},
@@ -232,6 +236,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:        securityGroupsPerRegionDesc,
+					ServiceName: "ec2",
 					Description: securityGroupsPerRegionDesc,
 					Usage:       2,
 				},
@@ -248,7 +253,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 				},
 			}
 
-			check := SecurityGroupsPerRegionUsageCheck{mockClient}
+			check := SecurityGroupsPerRegionUsageCheck{mockClient, "ec2"}
 			usage, err := check.Usage()
 
 			assert.NoError(t, err)

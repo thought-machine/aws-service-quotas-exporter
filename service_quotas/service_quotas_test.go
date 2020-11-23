@@ -58,7 +58,7 @@ func TestQuotasAndUsageWithUsageError(t *testing.T) {
 
 	expectedErr := errors.New("some err")
 	usageCheckMock := &UsageCheckMock{
-		err: expectedErr,
+		err:    expectedErr,
 		usages: nil,
 	}
 
@@ -146,7 +146,6 @@ func TestQuotasAndUsage(t *testing.T) {
 			Usage:       1,
 			Quota:       2,
 		},
-
 	}
 
 	assert.NoError(t, err)

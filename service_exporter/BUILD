@@ -1,8 +1,12 @@
 go_library(
-    name = "service_exporter",
-    srcs = ["service_exporter.go"],
+    name = "serviceexporter",
+    srcs = glob(
+        ["*.go"],
+        exclude = ["*_test.go"],
+    ),
     visibility = ["//..."],
     deps = [
+        "//service_quotas:servicequotas",
         "//third_party/go:prometheus",
     ]
 )
