@@ -2,13 +2,10 @@ package servicequotas
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/pkg/errors"
 )
-
-var newEC2Service = ec2New
 
 // Not all quota limits here are reported under "ec2", but all of the
 // usage checks are using the ec2 service
@@ -20,21 +17,18 @@ const (
 	onDemandInstanceRequestsDesc = "On-demand instance requests"
 )
 
-func ec2New(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-	return ec2.New(c, cfgs...)
+type RulesPerSecurityGroupUsageCheck struct {
+	client ec2iface.EC2API
 }
 
-// RulesPerSecurityGroupUsage returns the usage for each security
-// group ID with the usage value being the sum of their inbound and
-// outbound rules or an error
-func RulesPerSecurityGroupUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+// Usage returns the usage for each security group ID with the usage
+// value being the sum of their inbound and outbound rules or an error
+func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 	quotaUsages := []QuotaUsage{}
-
-	ec2Service := newEC2Service(c, cfgs...)
 
 	securityGroups := []*ec2.SecurityGroup{}
 	params := &ec2.DescribeSecurityGroupsInput{}
-	err := ec2Service.DescribeSecurityGroupsPages(params,
+	err := c.client.DescribeSecurityGroupsPages(params,
 		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
 			if page != nil {
 				for _, group := range page.SecurityGroups {
@@ -62,15 +56,18 @@ func RulesPerSecurityGroupUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([
 	return quotaUsages, nil
 }
 
-// SecurityGroupsPerENIUsage returns usage for each Elastic Network
-// Interface ID with the usage value being the number of security groups
-// for each ENI or an error
-func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+type SecurityGroupsPerENIUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns usage for each Elastic Network Interface ID with the
+// usage value being the number of security groups for each ENI or an
+// error
+func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 	quotaUsages := []QuotaUsage{}
 
-	ec2Service := newEC2Service(c, cfgs...)
 	params := &ec2.DescribeNetworkInterfacesInput{}
-	err := ec2Service.DescribeNetworkInterfacesPages(params,
+	err := c.client.DescribeNetworkInterfacesPages(params,
 		func(page *ec2.DescribeNetworkInterfacesOutput, lastPage bool) bool {
 			if page != nil {
 				for _, eni := range page.NetworkInterfaces {
@@ -92,16 +89,17 @@ func SecurityGroupsPerENIUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]
 	return quotaUsages, nil
 }
 
-// SecurityGroupsPerRegionUsage returns usage for security groups per
-// region as the number of all security groups for the region specified
-// with `cfgs` or an error
-func SecurityGroupsPerRegionUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
+type SecurityGroupsPerRegionUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns usage for security groups per region as the number of
+// all security groups for the region specified with `cfgs` or an error
+func (c *SecurityGroupsPerRegionUsageCheck) Usage() ([]QuotaUsage, error) {
 	numGroups := 0
 
-	ec2Service := newEC2Service(c, cfgs...)
-
 	params := &ec2.DescribeSecurityGroupsInput{}
-	err := ec2Service.DescribeSecurityGroupsPages(params,
+	err := c.client.DescribeSecurityGroupsPages(params,
 		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
 			if page != nil {
 				numGroups += len(page.SecurityGroups)
@@ -202,15 +200,17 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 	return totalvCPUs, nil
 }
 
-// StandardSpotInstanceRequestsUsage returns vCPU usage for all
-// standard (A, C, D, H, I, M, R, T, Z) spot instance requests and usage
-// or an error
+type StandardSpotInstanceRequestsUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns vCPU usage for all standard (A, C, D, H, I, M, R, T,
+// Z) spot instance requests and usage or an error
 // vCPUs are returned instead of the number of images due to the
 // service quota reporting the number of vCPUs
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-limits.html
-func StandardSpotInstanceRequestsUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
-	ec2Service := newEC2Service(c, cfgs...)
-	cpus, err := standardInstancesCPUs(ec2Service, true)
+func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
+	cpus, err := standardInstancesCPUs(c.client, true)
 	if err != nil {
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
@@ -225,14 +225,17 @@ func StandardSpotInstanceRequestsUsage(c client.ConfigProvider, cfgs ...*aws.Con
 	return usage, nil
 }
 
-// RunningOnDemandStandardInstancesUsage returns vCPU usage for all running
-// on-demand standard (A, C, D, H, I, M, R, T, Z) instances or an error
-// vCPUs are returned instead of the number of images due to the
-// service quota reporting the number of vCPUs
+type RunningOnDemandStandardInstancesUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns vCPU usage for all running on-demand standard (A, C,
+// D, H, I, M, R, T, Z) instances or an error vCPUs are returned instead
+// of the number of images due to the service quota reporting the number
+// of vCPUs
 // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-spot-limits.html
-func RunningOnDemandStandardInstancesUsage(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error) {
-	ec2Service := newEC2Service(c, cfgs...)
-	cpus, err := standardInstancesCPUs(ec2Service, false)
+func (c *RunningOnDemandStandardInstancesUsageCheck) Usage() ([]QuotaUsage, error) {
+	cpus, err := standardInstancesCPUs(c.client, false)
 	if err != nil {
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}

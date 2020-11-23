@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/pkg/errors"
@@ -43,13 +42,8 @@ func TestRulesPerSecurityGroupUsageWithError(t *testing.T) {
 		DescribeSecurityGroupsResponse: nil,
 	}
 
-	origNewEC2Service := newEC2Service
-	defer func() { newEC2Service = origNewEC2Service }()
-	newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-		return mockClient
-	}
-
-	usage, err := RulesPerSecurityGroupUsage(nil)
+	check := RulesPerSecurityGroupUsageCheck{mockClient}
+	usage, err := check.Usage()
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -115,13 +109,8 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 				},
 			}
 
-			origNewEC2Service := newEC2Service
-			defer func() { newEC2Service = origNewEC2Service }()
-			newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-				return mockClient
-			}
-
-			usage, err := RulesPerSecurityGroupUsage(nil)
+			check := RulesPerSecurityGroupUsageCheck{mockClient}
+			usage, err := check.Usage()
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)
@@ -135,13 +124,8 @@ func TestSecurityGroupsPerENIUsageWithError(t *testing.T) {
 		DescribeNetworkInterfacesResponse: nil,
 	}
 
-	origNewEC2Service := newEC2Service
-	defer func() { newEC2Service = origNewEC2Service }()
-	newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-		return mockClient
-	}
-
-	usage, err := SecurityGroupsPerENIUsage(nil)
+	check := SecurityGroupsPerENIUsageCheck{mockClient}
+	usage, err := check.Usage()
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -195,13 +179,8 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 				},
 			}
 
-			origNewEC2Service := newEC2Service
-			defer func() { newEC2Service = origNewEC2Service }()
-			newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-				return mockClient
-			}
-
-			usage, err := SecurityGroupsPerENIUsage(nil)
+			check := SecurityGroupsPerENIUsageCheck{mockClient}
+			usage, err := check.Usage()
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)
@@ -215,13 +194,8 @@ func TestSecurityGroupsPerRegionUsageWithError(t *testing.T) {
 		DescribeSecurityGroupsResponse: nil,
 	}
 
-	origNewEC2Service := newEC2Service
-	defer func() { newEC2Service = origNewEC2Service }()
-	newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-		return mockClient
-	}
-
-	usage, err := SecurityGroupsPerRegionUsage(nil)
+	check := SecurityGroupsPerRegionUsageCheck{mockClient}
+	usage, err := check.Usage()
 
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
@@ -274,13 +248,8 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 				},
 			}
 
-			origNewEC2Service := newEC2Service
-			defer func() { newEC2Service = origNewEC2Service }()
-			newEC2Service = func(c client.ConfigProvider, cfgs ...*aws.Config) ec2iface.EC2API {
-				return mockClient
-			}
-
-			usage, err := SecurityGroupsPerRegionUsage(nil)
+			check := SecurityGroupsPerRegionUsageCheck{mockClient}
+			usage, err := check.Usage()
 
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedUsage, usage)

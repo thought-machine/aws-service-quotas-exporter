@@ -3,6 +3,7 @@ package servicequotas
 import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/servicequotas"
@@ -15,15 +16,22 @@ var (
 	ErrFailedToGetUsage = errors.New("failed to get usage")
 )
 
-type usageCheck func(c client.ConfigProvider, cfgs ...*aws.Config) ([]QuotaUsage, error)
+// UsageCheck is an interface for retrieving service quota usage
+type UsageCheck interface {
+	// Usage returns slice of QuotaUsage or an error
+	Usage() ([]QuotaUsage, error)
+}
 
-func newUsageChecks() map[string]usageCheck {
-	return map[string]usageCheck{
-		"L-0EA8095F": RulesPerSecurityGroupUsage,
-		"L-2AFB9258": SecurityGroupsPerENIUsage,
-		"L-E79EC296": SecurityGroupsPerRegionUsage,
-		"L-34B43A08": StandardSpotInstanceRequestsUsage,
-		"L-1216C47A": RunningOnDemandStandardInstancesUsage,
+func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]UsageCheck {
+	// all clients that will be used by the usage checks
+	ec2Client := ec2.New(c, cfgs...)
+
+	return map[string]UsageCheck{
+		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client},
+		"L-2AFB9258": &SecurityGroupsPerENIUsageCheck{ec2Client},
+		"L-E79EC296": &SecurityGroupsPerRegionUsageCheck{ec2Client},
+		"L-34B43A08": &StandardSpotInstanceRequestsUsageCheck{ec2Client},
+		"L-1216C47A": &RunningOnDemandStandardInstancesUsageCheck{ec2Client},
 	}
 }
 
@@ -93,7 +101,7 @@ func isValidRegion(region string) bool {
 // QuotasAndUsage returns a slice of `QuotaUsage` or an error
 func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 	allQuotaUsages := []QuotaUsage{}
-	usageChecks := newUsageChecks()
+	usageChecks := newUsageChecks(s.session, aws.NewConfig().WithRegion(s.region))
 
 	var usageErr error
 
@@ -102,7 +110,7 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 		func(page *servicequotas.ListServiceQuotasOutput, lastPage bool) bool {
 			for _, quota := range page.Quotas {
 				if check, ok := usageChecks[*quota.QuotaCode]; ok {
-					quotaUsages, err := check(s.session, aws.NewConfig().WithRegion(s.region))
+					quotaUsages, err := check.Usage()
 					if err != nil {
 						usageErr = err
 						// stop paging when an error is encountered
