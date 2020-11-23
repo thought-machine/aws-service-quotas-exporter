@@ -17,6 +17,8 @@ type mockEC2Client struct {
 	err                               error
 	DescribeSecurityGroupsResponse    *ec2.DescribeSecurityGroupsOutput
 	DescribeNetworkInterfacesResponse *ec2.DescribeNetworkInterfacesOutput
+	InstancesFilters                  []*ec2.Filter
+	DescribeInstancesResponse         *ec2.DescribeInstancesOutput
 }
 
 func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityGroupsInput, fn func(*ec2.DescribeSecurityGroupsOutput, bool) bool) error {
@@ -26,6 +28,12 @@ func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityG
 
 func (m *mockEC2Client) DescribeNetworkInterfacesPages(input *ec2.DescribeNetworkInterfacesInput, fn func(*ec2.DescribeNetworkInterfacesOutput, bool) bool) error {
 	fn(m.DescribeNetworkInterfacesResponse, true)
+	return m.err
+}
+
+func (m *mockEC2Client) DescribeInstancesPages(input *ec2.DescribeInstancesInput, fn func(*ec2.DescribeInstancesOutput, bool) bool) error {
+	m.InstancesFilters = input.Filters
+	fn(m.DescribeInstancesResponse, true)
 	return m.err
 }
 
@@ -231,9 +239,9 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			securityGroups: []*ec2.SecurityGroup{},
 			expectedUsage: []QuotaUsage{
 				{
-					Name: securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionDesc,
 					Description: securityGroupsPerRegionDesc,
-					Usage: 0,
+					Usage:       0,
 				},
 			},
 		},
@@ -249,9 +257,9 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name: securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionDesc,
 					Description: securityGroupsPerRegionDesc,
-					Usage: 2,
+					Usage:       2,
 				},
 			},
 		},
@@ -278,4 +286,98 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			assert.Equal(t, tc.expectedUsage, usage)
 		})
 	}
+}
+
+func TestStandardInstancesCPUsWithError(t *testing.T) {
+	mockClient := &mockEC2Client{
+		err:                       errors.New("some err"),
+		DescribeInstancesResponse: nil,
+	}
+
+	cpus, err := standardInstancesCPUs(mockClient, true)
+
+	assert.Error(t, err)
+	assert.Equal(t, int64(0), cpus)
+}
+
+func TestStandardInstancesCPUsFilters(t *testing.T) {
+	instanceTypeFilter := standardInstanceTypeFilter()
+	instanceStateFilter := activeInstanceFilter()
+
+	testCases := []struct {
+		name            string
+		spotInstances   bool
+		expectedFilters []*ec2.Filter
+	}{
+		{
+			name:          "ForSpotInstances",
+			spotInstances: true,
+			expectedFilters: []*ec2.Filter{
+				instanceTypeFilter,
+				instanceStateFilter,
+				{
+					Name:   aws.String("instance-lifecycle"),
+					Values: []*string{aws.String("spot")},
+				},
+			},
+		},
+		{
+			name:            "ForOnDemandInstances",
+			spotInstances:   false,
+			expectedFilters: []*ec2.Filter{instanceTypeFilter, instanceStateFilter},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockClient := &mockEC2Client{err: nil, DescribeInstancesResponse: nil}
+
+			cpus, err := standardInstancesCPUs(mockClient, tc.spotInstances)
+
+			assert.NoError(t, err)
+			assert.Equal(t, int64(0), cpus)
+			assert.Equal(t, mockClient.InstancesFilters, tc.expectedFilters)
+		})
+	}
+}
+
+func TestStandardInstancesCPUs(t *testing.T) {
+	mockClient := &mockEC2Client{
+		err: nil,
+		DescribeInstancesResponse: &ec2.DescribeInstancesOutput{
+			Reservations: []*ec2.Reservation{
+				{
+					Instances: []*ec2.Instance{
+						{
+							InstanceLifecycle: aws.String("spot"),
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(4),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+					},
+				},
+				{
+					Instances: []*ec2.Instance{
+						{
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(2),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+						{
+							CpuOptions: &ec2.CpuOptions{
+								CoreCount:      aws.Int64(4),
+								ThreadsPerCore: aws.Int64(2),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cpus, err := standardInstancesCPUs(mockClient, false)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(12), cpus)
 }
