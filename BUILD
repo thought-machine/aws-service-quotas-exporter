@@ -5,6 +5,7 @@ go_binary(
     srcs = ["main.go"],
     static = False,
     deps = [
+        "//service_exporter:serviceexporter",
         "//third_party/go:prometheus",
         "//third_party/go:logrus",
         "//third_party/go:go-flags",
