@@ -18,6 +18,8 @@ var (
 	ErrFailedToGetUsage   = errors.New("failed to get usage")
 )
 
+var services = []string{"ec2", "vpc"}
+
 // UsageCheck is an interface for retrieving service quota usage
 type UsageCheck interface {
 	// Usage returns slice of QuotaUsage or an error
@@ -29,11 +31,11 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
 	ec2Client := ec2.New(c, cfgs...)
 
 	return map[string]UsageCheck{
-		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client, "ec2"},
-		"L-2AFB9258": &SecurityGroupsPerENIUsageCheck{ec2Client, "ec2"},
-		"L-E79EC296": &SecurityGroupsPerRegionUsageCheck{ec2Client, "ec2"},
-		"L-34B43A08": &StandardSpotInstanceRequestsUsageCheck{ec2Client, "ec2"},
-		"L-1216C47A": &RunningOnDemandStandardInstancesUsageCheck{ec2Client, "ec2"},
+		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client},
+		"L-2AFB9258": &SecurityGroupsPerENIUsageCheck{ec2Client},
+		"L-E79EC296": &SecurityGroupsPerRegionUsageCheck{ec2Client},
+		"L-34B43A08": &StandardSpotInstanceRequestsUsageCheck{ec2Client},
+		"L-1216C47A": &RunningOnDemandStandardInstancesUsageCheck{ec2Client},
 	}
 }
 
@@ -42,9 +44,13 @@ type QuotaUsage struct {
 	// Name is the name of the resource, eg. the ID of the VPC or
 	// the same as the description for single-resource quotas
 	// (eg. VPCs per region)
+	// Name is the name of the quota (eg. spot_instance_requests)
 	Name string
-	// ServiceName is the AWS service name (eg EC2)
-	ServiceName string
+	// ResourceName is the name of the resource in case the quota
+	// is for multiple resources. As an example for "rules per
+	// security group" the ResourceName will be the ARN of the
+	// security group
+	ResourceName *string
 	// Description is the name of the service quota (eg. "Inbound
 	// or outbound rules per security group")
 	Description string
@@ -52,6 +58,13 @@ type QuotaUsage struct {
 	Usage float64
 	// Quota is the current quota
 	Quota float64
+}
+
+func (q QuotaUsage) Identifier() string {
+	if q.ResourceName != nil {
+		return *q.ResourceName
+	}
+	return q.Name
 }
 
 // ServiceQuotas is an implementation for retrieving service quotas
@@ -105,13 +118,11 @@ func isValidRegion(region string) bool {
 	return ok
 }
 
-// QuotasAndUsage returns a slice of `QuotaUsage` or an error
-func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
-	allQuotaUsages := []QuotaUsage{}
-
+func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
+	serviceQuotaUsages := []QuotaUsage{}
 	var usageErr error
 
-	params := &awsservicequotas.ListServiceQuotasInput{}
+	params := &awsservicequotas.ListServiceQuotasInput{ServiceCode: aws.String(service)}
 	err := s.quotasService.ListServiceQuotasPages(params,
 		func(page *awsservicequotas.ListServiceQuotasOutput, lastPage bool) bool {
 			if page != nil {
@@ -126,7 +137,7 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 
 						for _, quotaUsage := range quotaUsages {
 							quotaUsage.Quota = *quota.Value
-							allQuotaUsages = append(allQuotaUsages, quotaUsage)
+							serviceQuotaUsages = append(serviceQuotaUsages, quotaUsage)
 						}
 					}
 				}
@@ -142,5 +153,21 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 		return nil, usageErr
 	}
 
+	return serviceQuotaUsages, nil
+}
+
+// QuotasAndUsage returns a slice of `QuotaUsage` or an error
+func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
+	allQuotaUsages := []QuotaUsage{}
+	for _, service := range services {
+		serviceQuotas, err := s.quotasForService(service)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, quota := range serviceQuotas {
+			allQuotaUsages = append(allQuotaUsages, quota)
+		}
+	}
 	return allQuotaUsages, nil
 }

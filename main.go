@@ -22,12 +22,12 @@ var opts struct {
 func main() {
 	flags.Parse(&opts)
 
-	exporter, err := serviceexporter.NewServiceQuotasExporter(opts.Region, opts.Profile)
+	quotasExporter, err := serviceexporter.NewServiceQuotasExporter(opts.Region, opts.Profile)
 	if err != nil {
 		log.Fatalf("Failed to create exporter: %s", err)
 	}
 
-	prometheus.Register(exporter)
+	prometheus.Register(quotasExporter)
 
 	log.Infof("Serving on port: %d", opts.Port)
 	log.Infof("Serving Prometheus metrics on /metrics")

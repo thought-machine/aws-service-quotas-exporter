@@ -45,30 +45,31 @@ func (e *ServiceQuotasExporter) Describe(ch chan<- *prometheus.Desc) {
 
 	for _, quota := range quotas {
 		// check so we don't report the same metric more than once
-		if _, ok := e.metricsUsedQuota[quota.Name]; ok {
+		resourceID := quota.Identifier()
+		if _, ok := e.metricsUsedQuota[resourceID]; ok {
 			continue
 		}
 
 		usedDescription := fmt.Sprintf("Used amount of %s", quota.Description)
-		limitDescription := fmt.Sprintf("Limit of %s", quota.Description)
-
-		e.metricsUsedQuota[quota.Name] = newServerMetric(
+		e.metricsUsedQuota[resourceID] = newMetric(
 			e.metricsRegion,
-			quota.ServiceName,
+			quota.Name,
 			"used_total",
 			usedDescription,
 			[]string{"resource"},
 		)
-		e.metricsQuotaLimit[quota.Name] = newServerMetric(
+
+		limitDescription := fmt.Sprintf("Limit of %s", quota.Description)
+		e.metricsQuotaLimit[resourceID] = newMetric(
 			e.metricsRegion,
-			quota.ServiceName,
+			quota.Name,
 			"limit_total",
 			limitDescription,
 			[]string{"resource"},
 		)
 
-		ch <- e.metricsUsedQuota[quota.Name]
-		ch <- e.metricsQuotaLimit[quota.Name]
+		ch <- e.metricsUsedQuota[resourceID]
+		ch <- e.metricsQuotaLimit[resourceID]
 	}
 }
 
@@ -80,28 +81,27 @@ func (e *ServiceQuotasExporter) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, quota := range quotas {
-		// validate if the metric is described
-		metricLimit, ok := e.metricsQuotaLimit[quota.Name]
+		resourceID := quota.Identifier()
+
+		metricLimit, ok := e.metricsQuotaLimit[resourceID]
 		if !ok {
-			log.Errorf("metric %s not described", quota.Name)
 			continue
 		}
 
-		ch <- prometheus.MustNewConstMetric(metricLimit, prometheus.GaugeValue, quota.Quota, quota.Name)
+		ch <- prometheus.MustNewConstMetric(metricLimit, prometheus.GaugeValue, quota.Quota, resourceID)
 
-		metricUsed, ok := e.metricsUsedQuota[quota.Name]
+		metricUsed, ok := e.metricsUsedQuota[resourceID]
 		if !ok {
-			log.Errorf("metric %s not described", quota.Name)
 			continue
 		}
 
-		ch <- prometheus.MustNewConstMetric(metricUsed, prometheus.GaugeValue, quota.Usage, quota.Name)
+		ch <- prometheus.MustNewConstMetric(metricUsed, prometheus.GaugeValue, quota.Usage, resourceID)
 	}
 }
 
-func newServerMetric(region, service, metricName, description string, labels []string) *prometheus.Desc {
+func newMetric(region, quotaName, metricName, description string, labels []string) *prometheus.Desc {
 	return prometheus.NewDesc(
-		prometheus.BuildFQName("aws", service, metricName),
+		prometheus.BuildFQName("aws", quotaName, metricName),
 		description,
 		labels,
 		prometheus.Labels{"region": region},

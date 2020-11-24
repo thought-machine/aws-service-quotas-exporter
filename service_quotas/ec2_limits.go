@@ -10,16 +10,24 @@ import (
 // Not all quota limits here are reported under "ec2", but all of the
 // usage checks are using the ec2 service
 const (
-	rulesPerSecGrpDesc           = "rules per security group"
-	secGroupsPerENIDesc          = "security groups per network interface"
-	securityGroupsPerRegionDesc  = "security groups per region"
-	spotInstanceRequestsDesc     = "spot instance requests"
-	onDemandInstanceRequestsDesc = "on-demand instance requests"
+	rulesPerSecGrpName = "rules_per_security_group"
+	rulesPerSecGrpDesc = "rules per security group"
+
+	secGroupsPerENIName = "security_groups_per_network_interface"
+	secGroupsPerENIDesc = "security groups per network interface"
+
+	securityGroupsPerRegionName = "security_groups_per_region"
+	securityGroupsPerRegionDesc = "security groups per region"
+
+	spotInstanceRequestsName = "spot_instance_requests"
+	spotInstanceRequestsDesc = "spot instance requests"
+
+	onDemandInstanceRequestsName = "ondemand_instance_requests"
+	onDemandInstanceRequestsDesc = "ondemand instance requests"
 )
 
 type RulesPerSecurityGroupUsageCheck struct {
-	client      ec2iface.EC2API
-	serviceName string
+	client ec2iface.EC2API
 }
 
 // Usage returns the usage for each security group ID with the usage
@@ -47,10 +55,10 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 		inboundRules := len(securityGroup.IpPermissions)
 		outboundRules := len(securityGroup.IpPermissionsEgress)
 		quotaUsage := QuotaUsage{
-			Name:        *securityGroup.GroupId,
-			ServiceName: c.serviceName,
-			Description: rulesPerSecGrpDesc,
-			Usage:       float64(inboundRules + outboundRules),
+			Name:         rulesPerSecGrpName,
+			ResourceName: securityGroup.GroupId,
+			Description:  rulesPerSecGrpDesc,
+			Usage:        float64(inboundRules + outboundRules),
 		}
 		quotaUsages = append(quotaUsages, quotaUsage)
 	}
@@ -59,8 +67,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 }
 
 type SecurityGroupsPerENIUsageCheck struct {
-	client      ec2iface.EC2API
-	serviceName string
+	client ec2iface.EC2API
 }
 
 // Usage returns usage for each Elastic Network Interface ID with the
@@ -75,10 +82,10 @@ func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 			if page != nil {
 				for _, eni := range page.NetworkInterfaces {
 					usage := QuotaUsage{
-						Name:        *eni.NetworkInterfaceId,
-						ServiceName: c.serviceName,
-						Description: secGroupsPerENIDesc,
-						Usage:       float64(len(eni.Groups)),
+						Name:         secGroupsPerENIName,
+						ResourceName: eni.NetworkInterfaceId,
+						Description:  secGroupsPerENIDesc,
+						Usage:        float64(len(eni.Groups)),
 					}
 					quotaUsages = append(quotaUsages, usage)
 				}
@@ -94,8 +101,7 @@ func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 }
 
 type SecurityGroupsPerRegionUsageCheck struct {
-	client      ec2iface.EC2API
-	serviceName string
+	client ec2iface.EC2API
 }
 
 // Usage returns usage for security groups per region as the number of
@@ -118,8 +124,7 @@ func (c *SecurityGroupsPerRegionUsageCheck) Usage() ([]QuotaUsage, error) {
 
 	usage := []QuotaUsage{
 		{
-			Name:        securityGroupsPerRegionDesc,
-			ServiceName: c.serviceName,
+			Name:        securityGroupsPerRegionName,
 			Description: securityGroupsPerRegionDesc,
 			Usage:       float64(numGroups),
 		},
@@ -208,7 +213,6 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 
 type StandardSpotInstanceRequestsUsageCheck struct {
 	client      ec2iface.EC2API
-	serviceName string
 }
 
 // Usage returns vCPU usage for all standard (A, C, D, H, I, M, R, T,
@@ -224,8 +228,7 @@ func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 
 	usage := []QuotaUsage{
 		{
-			Name:        spotInstanceRequestsDesc,
-			ServiceName: c.serviceName,
+			Name:        spotInstanceRequestsName,
 			Description: spotInstanceRequestsDesc,
 			Usage:       float64(cpus),
 		},
@@ -235,7 +238,6 @@ func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 
 type RunningOnDemandStandardInstancesUsageCheck struct {
 	client      ec2iface.EC2API
-	serviceName string
 }
 
 // Usage returns vCPU usage for all running on-demand standard (A, C,
@@ -251,8 +253,7 @@ func (c *RunningOnDemandStandardInstancesUsageCheck) Usage() ([]QuotaUsage, erro
 
 	usage := []QuotaUsage{
 		{
-			Name:        onDemandInstanceRequestsDesc,
-			ServiceName: c.serviceName,
+			Name:        onDemandInstanceRequestsName,
 			Description: onDemandInstanceRequestsDesc,
 			Usage:       float64(cpus),
 		},

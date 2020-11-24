@@ -14,11 +14,16 @@ type mockServiceQuotasClient struct {
 	servicequotasiface.ServiceQuotasAPI
 
 	err                       error
+	serviceName               string
 	ListServiceQuotasResponse *awsservicequotas.ListServiceQuotasOutput
 }
 
 func (m *mockServiceQuotasClient) ListServiceQuotasPages(input *awsservicequotas.ListServiceQuotasInput, fn func(*awsservicequotas.ListServiceQuotasOutput, bool) bool) error {
-	fn(m.ListServiceQuotasResponse, true)
+	if *input.ServiceCode == m.serviceName {
+		fn(m.ListServiceQuotasResponse, true)
+	} else {
+		fn(nil, true)
+	}
 	return m.err
 }
 
@@ -46,6 +51,7 @@ func TestQuotasAndUsageWithError(t *testing.T) {
 
 func TestQuotasAndUsageWithUsageError(t *testing.T) {
 	mockClient := &mockServiceQuotasClient{
+		serviceName: "ec2",
 		ListServiceQuotasResponse: &awsservicequotas.ListServiceQuotasOutput{
 			Quotas: []*awsservicequotas.ServiceQuota{
 				{
@@ -76,6 +82,7 @@ func TestQuotasAndUsageWithUsageError(t *testing.T) {
 
 func TestQuotasAndUsage(t *testing.T) {
 	mockClient := &mockServiceQuotasClient{
+		serviceName: "ec2",
 		ListServiceQuotasResponse: &awsservicequotas.ListServiceQuotasOutput{
 			Quotas: []*awsservicequotas.ServiceQuota{
 				{
@@ -97,21 +104,23 @@ func TestQuotasAndUsage(t *testing.T) {
 	firstUsageCheckMock := &UsageCheckMock{
 		usages: []QuotaUsage{
 			{
-				Name:        "i-resource1",
-				Description: "check with multiple resources",
-				Usage:       10,
+				Name:         "check_with_multiple_resources",
+				ResourceName: aws.String("i-resource1"),
+				Description:  "check with multiple resources",
+				Usage:        10,
 			},
 			{
-				Name:        "i-resource2",
-				Description: "check with multiple resources",
-				Usage:       3,
+				Name:         "check_with_multiple_resources",
+				ResourceName: aws.String("i-resource2"),
+				Description:  "check with multiple resources",
+				Usage:        3,
 			},
 		},
 	}
 	secondUsageCheckMock := &UsageCheckMock{
 		usages: []QuotaUsage{
 			{
-				Name:        "some check",
+				Name:        "some_check",
 				Description: "some check",
 				Usage:       1,
 			},
@@ -129,19 +138,21 @@ func TestQuotasAndUsage(t *testing.T) {
 
 	expectedQuotasAndUsage := []QuotaUsage{
 		{
-			Name:        "i-resource1",
-			Description: "check with multiple resources",
-			Usage:       10,
-			Quota:       15,
+			Name:         "check_with_multiple_resources",
+			ResourceName: aws.String("i-resource1"),
+			Description:  "check with multiple resources",
+			Usage:        10,
+			Quota:        15,
 		},
 		{
-			Name:        "i-resource2",
-			Description: "check with multiple resources",
-			Usage:       3,
-			Quota:       15,
+			Name:         "check_with_multiple_resources",
+			ResourceName: aws.String("i-resource2"),
+			Description:  "check with multiple resources",
+			Usage:        3,
+			Quota:        15,
 		},
 		{
-			Name:        "some check",
+			Name:        "some_check",
 			Description: "some check",
 			Usage:       1,
 			Quota:       2,
@@ -150,4 +161,44 @@ func TestQuotasAndUsage(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, expectedQuotasAndUsage, actualQuotasAndUsage)
+}
+
+func TestQuotaUsageIdentifier(t *testing.T) {
+	testCases := []struct {
+		name               string
+		quotaName          string
+		resourceName       *string
+		expectedIdentifier string
+	}{
+		{
+			name:               "WithResourceName",
+			quotaName:          "thequota",
+			resourceName:       aws.String("some-resource"),
+			expectedIdentifier: "some-resource",
+		},
+		{
+			name:               "WithoutResourceName",
+			quotaName:          "somequota",
+			resourceName:       nil,
+			expectedIdentifier: "somequota",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			usage := QuotaUsage{
+				Name:         tc.quotaName,
+				ResourceName: tc.resourceName,
+			}
+			assert.Equal(t, tc.expectedIdentifier, usage.Identifier())
+		})
+	}
+}
+
+func TestNewServiceQuotasWithInvalidRegion(t *testing.T) {
+	svcQuotas, err := NewServiceQuotas("asdasd", "someprofile")
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, ErrInvalidRegion))
+	assert.Nil(t, svcQuotas)
 }
