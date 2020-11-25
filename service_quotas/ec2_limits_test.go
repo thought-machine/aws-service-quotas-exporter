@@ -87,14 +87,16 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name:        "somegroupid",
-					Description: rulesPerSecGrpDesc,
-					Usage:       0,
+					Name:         rulesPerSecGrpName,
+					ResourceName: aws.String("somegroupid"),
+					Description:  rulesPerSecGrpDesc,
+					Usage:        0,
 				},
 				{
-					Name:        "groupwithrules",
-					Description: rulesPerSecGrpDesc,
-					Usage:       2,
+					Name:         rulesPerSecGrpName,
+					ResourceName: aws.String("groupwithrules"),
+					Description:  rulesPerSecGrpDesc,
+					Usage:        2,
 				},
 			},
 		},
@@ -162,9 +164,10 @@ func TestSecurityGroupsPerENIUsage(t *testing.T) {
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name:        "someeni",
-					Description: secGroupsPerENIDesc,
-					Usage:       2,
+					Name:         secGroupsPerENIName,
+					ResourceName: aws.String("someeni"),
+					Description:  secGroupsPerENIDesc,
+					Usage:        2,
 				},
 			},
 		},
@@ -213,7 +216,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			securityGroups: []*ec2.SecurityGroup{},
 			expectedUsage: []QuotaUsage{
 				{
-					Name:        securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionName,
 					Description: securityGroupsPerRegionDesc,
 					Usage:       0,
 				},
@@ -231,7 +234,7 @@ func TestSecurityGroupsPerRegionUsage(t *testing.T) {
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name:        securityGroupsPerRegionDesc,
+					Name:        securityGroupsPerRegionName,
 					Description: securityGroupsPerRegionDesc,
 					Usage:       2,
 				},
