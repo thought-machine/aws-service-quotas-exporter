@@ -46,7 +46,7 @@ workflows:
               only: master
   build-tag:
     jobs:
-      - build_and_release_tag:
+      - build_and_release:
           context: conntest-dockerhub-release
           filters:
             tags:
