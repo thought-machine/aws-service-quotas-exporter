@@ -72,7 +72,7 @@ service quotas - list service quotas
 ## Docker image
 `docker build -f Dockerfile-builder . --rm=false`
 
-Docker images are also available at thoughtmachine/aws-service-quotas-exporter:$COMMIT See https://hub.docker.com/r/thoughtmachine/aws-service-quotas-exporter
+Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<version> See https://hub.docker.com/r/thoughtmachine/aws-service-quotas-exporter
 
 # Adding additional metrics
 
