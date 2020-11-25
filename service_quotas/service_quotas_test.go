@@ -46,6 +46,7 @@ func TestQuotasAndUsageWithError(t *testing.T) {
 	quotasAndUsage, err := serviceQuotas.QuotasAndUsage()
 
 	assert.Error(t, err)
+	assert.True(t, errors.Is(err, ErrFailedToListQuotas))
 	assert.Nil(t, quotasAndUsage)
 }
 
