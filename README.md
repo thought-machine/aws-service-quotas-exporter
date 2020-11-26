@@ -89,15 +89,63 @@ Example IAM policy
 
 Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<version> See https://hub.docker.com/r/thoughtmachine/aws-service-quotas-exporter
 
-# Adding additional metrics
+# Extending the exporter with additional metrics
 
 1. Implement the `QuotasInterface`.
-   * Return a slice of `QuotaUsage` with the `ResourceName` if the
-     check is for multiple resources, such as the rules per security
-     group or a slice with a single element and the `ResourceName` set
-     to `nil` for checks like the spot instance requests.
+
+Example
+``` service_quotas/<service_name>_limits.go
+const (
+    myQuotaName        = "prometheus_valid_metric_name"  // Only [a-zA-Z0-9:_]
+    myQuotaDescription = "my description"
+)
+
+type MyUsageCheck struct {
+    client awsserviceiface.SERVICEAPI  // eg ec2iface.EC2API
+}
+
+func (c *MyUsageCheck) Usage() ([]QuotaUsage, error) {
+    // ...client.GetRequiredInformation
+
+    // In case we are retrieving usage for multiple resources:
+    for _, resource := range {
+        usage := QuotaUsage{
+            Name:         myQuotaName,
+            ResourceName: resource.Identifier,
+            Description:  myQuotaDescription,
+            Usage:        myUsage,
+        }
+        usages = append(usages, usage)
+    }
+
+    // For a single resource
+    usages := []QuotaUsage{
+        {
+            Name:        myQuotaName,
+            Description: myQuotaDescription,
+            Usage:       myUsage,
+        },
+    }
+
+    return usages, err
+}
+```
+
 2. Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
-3. If the service for that usage check is not present in `services` (`service_quotas/service_quotas.go`), add it.
+
+Example:
+``` service_quotas/service_quotas.go
+func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]UsageCheck {
+    myClient := someawsclient.New(c, cfgs)
+    return map[string]UsageCheck{
+        //... other usage checks
+        "L-SERVICE_QUOTAS_CODE": &MyUsageCheck{myClient},
+    }
+}
+```
+
+3. Update this README with the required actions :) (See the [IAM Permissions](#IAM Permissions) section)
+
 
 [1]: https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html
 [2]: https://prometheus.io/
