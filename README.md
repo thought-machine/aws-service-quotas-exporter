@@ -94,7 +94,8 @@ Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<
 1. Implement the `QuotasInterface`.
 
 Example
-``` service_quotas/<service_name>_limits.go
+`service_quotas/<service_name>_limits.go`
+``` 
 const (
     myQuotaName        = "prometheus_valid_metric_name"  // Only [a-zA-Z0-9:_]
     myQuotaDescription = "my description"
@@ -134,7 +135,8 @@ func (c *MyUsageCheck) Usage() ([]QuotaUsage, error) {
 2. Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
 
 Example:
-``` service_quotas/service_quotas.go
+`service_quotas/service_quotas.go`
+```
 func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]UsageCheck {
     myClient := someawsclient.New(c, cfgs)
     return map[string]UsageCheck{
@@ -144,7 +146,7 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
 }
 ```
 
-3. Update this README with the required actions :) (See the [IAM Permissions](#IAM Permissions) section)
+3. Update this README with the required actions :) (See the IAM Permissions section)
 
 
 [1]: https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html
