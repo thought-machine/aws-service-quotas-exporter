@@ -91,7 +91,7 @@ Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<
 
 # Extending the exporter with additional metrics
 
-1. Implement the `QuotasInterface`.
+### Implement the `QuotasInterface`.
 
 Example
 `service_quotas/<service_name>_limits.go`
@@ -132,9 +132,8 @@ func (c *MyUsageCheck) Usage() ([]QuotaUsage, error) {
 }
 ```
 
-2. Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
+### Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
 
-Example:
 `service_quotas/service_quotas.go`
 ```
 func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]UsageCheck {
@@ -146,7 +145,7 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
 }
 ```
 
-3. Update this README with the required actions :) (See the IAM Permissions section)
+### Update this README with the required actions :) (See the IAM Permissions section)
 
 
 [1]: https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html
