@@ -42,15 +42,30 @@ aws_ondemand_instance_requests_limit_total{region="eu-west-1",resource="ondemand
 aws_ondemand_instance_requests_used_total{region="eu-west-1",resource="ondemand_instance_requests"} 440
 ```
 
-# IAM Policy required for the exporter to run
+# IAM Permissions
 
-TODO:
-Describe security groups
-Describe network interfaces
-Describe instances
-service quotas - list service quotas
+The AWS Service Quotas requires permissions for the following actions
+to be able to run:
 
+ * `ec2:DescribeInstances`
+ * `cloudwatch:DescribeAlarms`
+ * `cloudwatch:GetMetricStatistics`
+
+Example IAM policy
 ```
+{
+   "Version": "2012-10-17",
+   "Statement": [{
+      "Effect": "Allow",
+      "Action": [
+         "ec2:DescribeInstances",
+         "cloudwatch:DescribeAlarms",
+         "cloudwatch:GetMetricStatistics"
+      ],
+      "Resource": "*"
+   }
+   ]
+}
 ```
 
 # Options
