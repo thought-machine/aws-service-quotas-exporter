@@ -47,9 +47,10 @@ aws_ondemand_instance_requests_used_total{region="eu-west-1",resource="ondemand_
 The AWS Service Quotas requires permissions for the following actions
 to be able to run:
 
+ * `ec2:DescribeSecurityGroups`
+ * `ec2:DescribeNetworkInterfaces`
  * `ec2:DescribeInstances`
- * `cloudwatch:DescribeAlarms`
- * `cloudwatch:GetMetricStatistics`
+ * `servicequotas:ListServiceQuotas`
 
 Example IAM policy
 ```
@@ -58,13 +59,13 @@ Example IAM policy
    "Statement": [{
       "Effect": "Allow",
       "Action": [
-         "ec2:DescribeInstances",
-         "cloudwatch:DescribeAlarms",
-         "cloudwatch:GetMetricStatistics"
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DescribeInstances",
+          "servicequotas:ListServiceQuotas",
       ],
       "Resource": "*"
-   }
-   ]
+   }]
 }
 ```
 
