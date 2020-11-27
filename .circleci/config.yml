@@ -1,0 +1,61 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/ for more details
+version: 2
+jobs:
+  build_and_test:
+    working_directory: ~/aws-service-quotas-exporter
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+  build_and_release:
+    working_directory: ~/aws-service-quotas-exporter
+    machine: true
+    steps:
+      - checkout
+      - run:
+          name: Build Docker Image
+          command: |
+            if [ -z ${CIRCLE_TAG+x} ]
+            then
+                docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+            else
+                docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
+            fi
+      - run:
+          name: Publish Docker Image to Docker Hub
+          command: |
+            echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            if [ -z ${CIRCLE_TAG+x} ]
+            then
+                docker push thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+            else
+                docker push thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
+            fi
+workflows:
+  version: 2
+  build-master:
+    jobs:
+      - build_and_release:
+          context: conntest-dockerhub-release
+          filters:
+            branches:
+              only: master
+  build-tag:
+    jobs:
+      - build_and_release:
+          context: conntest-dockerhub-release
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
+  test-buildable:
+    jobs:
+      - build_and_test:
+          filters:
+            branches:
+              ignore: master
