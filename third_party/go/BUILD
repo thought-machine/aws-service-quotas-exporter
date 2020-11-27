@@ -42,22 +42,6 @@ go_get(
 )
 
 go_get(
-    name="backoff",
-    get = "github.com/cenkalti/backoff",
-    licences = ["MIT"],
-    revision="31cc31bb63269a3c813d1f26e0ab058452b7d803",
-    deps = [
-        ":go-spew",
-        ":difflib",
-        ":x_sys",
-        ":testify",
-    ],
-    hashes = [
-        "e4b75eb61ca5837e61d035b69dfd37b09f2b4ff487b7190f3a7ed44675755856",
-    ],
-)
-
-go_get(
     name = "logrus",
     get = "github.com/sirupsen/logrus",
     licences = ["MIT"],
@@ -88,51 +72,9 @@ go_get(
     ],
 )
 
-go_get(
-    name = "mock",
-    get = "github.com/golang/mock/...",
-    licences = ["apache-2.0"],
-    revision = "v1.4.4",
-    deps = [
-        ":x_net",
-        ":x_tools",
-    ],
-    hashes = [
-        "62c71cc09d45f5fb2b2a64a877a99b333295af4425918a655c2df8c1eac7879b",
-    ],
-)
-
 #########################
 # Package dependencies
 #########################
-
-go_get(
-    name = "goldmark",
-    get = "github.com/yuin/goldmark",
-    licences = ["MIT"],
-    revision = "v1.2.1",
-    install = [
-        "ast",
-        "renderer/html",
-        "text",
-    ],
-    hashes = [
-        "d7dc2d7863ed6960a466f7814bd22d484b87b84cb1b6a544ee5a7e1bc5727fe9",
-    ],
-)
-
-go_get(
-    name = "x_mod",
-    get = "golang.org/x/mod",
-    install = [
-        "semver",
-    ],
-    licences = ["bsd-3-clause"],
-    revision = "ce943fd02449f621243c9ea6e64098e84752b92b",
-    hashes = [
-        "7c47cd30783ed9fd7f86dcbb751978c9c700f88e54b9d95f34a5c3bb5635c35a",
-    ],
-)
 
 go_get(
     name = "x_errors",
@@ -142,29 +84,6 @@ go_get(
     deps = [":x_sys"],
     hashes = [
         "3bebb60d4b80827db801f179f9dbc95e20860a173fbc4d0704850020b339e290",
-    ],
-)
-
-go_get(
-    name = "x_tools",
-    get = "golang.org/x/tools",
-    install = [
-        "cmd/...",
-        "imports",
-        "go/packages",
-    ],
-    licences = ["bsd-3-clause"],
-    revision = "gopls/v0.4.4",
-    deps = [
-        ":x_crypto",
-        ":x_errors",
-        ":x_mod",
-        ":x_net",
-        ":x_sync",
-        ":goldmark",
-    ],
-    hashes = [
-        "aa000721e26292d58281d47626e67c0408073054f8aeb3ab619ddd03dbd9ce9b",
     ],
 )
 
@@ -221,27 +140,6 @@ go_get(
     revision = "v0.9.1",
     hashes = [
         "f2efacf221626cee92274baf18713452b47908117c8aafe0f1c8bde455670f56",
-    ],
-)
-
-go_get(
-    name = "oauth2",
-    get = "golang.org/x/oauth2",
-    install = [
-        "",
-        "google",
-        "internal",
-        "jws",
-        "jwt",
-    ],
-    licences = ["bsd-3-clause"],
-    revision = "bf48bf16ab8d622ce64ec6ce98d2c98f916b6303",
-    deps = [
-        ":cloud-metadata",
-        ":x_net",
-    ],
-    hashes = [
-        "1e30fed14c6edabde86ad5f42399728ff8f0c0d648bf6bc75455ba6197337da3",
     ],
 )
 
@@ -394,64 +292,6 @@ go_get(
 )
 
 go_get(
-    name = "gogo-protobuf",
-    get = "github.com/gogo/protobuf",
-    install = [
-        "proto",
-        "sortkeys",
-    ],
-    licences = ["bsd-3-clause"],
-    revision = "v1.3.1",
-    strip = ["proto/proto3_proto"],
-    hashes = [
-        "2ba7a3244df95461a553f5dd8162d8d4528aca095373a6eb1369cfbf8578fdab",
-    ],
-)
-
-go_get(
-    name = "inf.v0",
-    get = "gopkg.in/inf.v0",
-    licences = ["bsd-3-clause"],
-    revision = "v0.9.1",
-    hashes = [
-        "8a1234d6fa309c8b3b5ea5353adac45797e19b8836a0ba21718d068f871a618c",
-    ],
-)
-
-go_get(
-    name = "lru",
-    get = "github.com/hashicorp/golang-lru",
-    licences = ["mpl-2.0"],
-    revision = "v0.5.4",
-
-    hashes = [
-        "67edd988a80a5f18bbd0363cfc74b9c6782a49d277a1f27ea1892ee32041f61b",
-    ],
-)
-
-go_get(
-    name = "pflag",
-    get = "github.com/spf13/pflag",
-    licences = ["bsd-3-clause"],
-    revision = "v1.0.5",
-    hashes = [
-        "72d85b140b2866b869de748383faaaa6a7a8d9e30730d0eec8bd70e081e2a5ac",
-    ],
-)
-
-
-go_get(
-    name = "x_time_rate",
-    get = "golang.org/x/time/rate",
-    licences = ["bsd-3-clause"],
-    deps = [":x_net"],
-    revision = "3af7569d3a1e776fc2a3c1cec133b43105ea9c2e",
-    hashes = [
-        "a594f7c19df6a65c127f9e71d07a07fca9b4d145e16e008450445dfe70cbb3bf",
-    ],
-)
-
-go_get(
     name = "x_text",
     get = "golang.org/x/text/...",
     revision = "v0.3.0",
@@ -461,16 +301,6 @@ go_get(
     ],
     hashes = [
         "72b1315e4f1e401a055feaf9722bb69e95edc36c2526ce6b3bb62c2b8fb39ce2",
-    ],
-)
-
-go_get(
-    name = "websocket",
-    get = "github.com/gorilla/websocket",
-    licences = ["bsd-2-clause"],
-    revision = "v1.4.2",
-    hashes = [
-        "289da6a8cfbff95cdb23eceb59ef91b2a8d4e4fbca7c8fa352c48dfd903d5091",
     ],
 )
 
@@ -493,16 +323,6 @@ go_get(
 )
 
 go_get(
-    name = "cloud-metadata",
-    get = "cloud.google.com/go/compute/metadata",
-    licences = ["apache-2.0"],
-    revision = "v0.65.0",
-    hashes = [
-        "5583d818debe00ff9a7cb084d0f1f37571bd66d6b202096df81d663ad3d607af",
-    ],
-)
-
-go_get(
     name = "reflect2",
     get = "github.com/modern-go/reflect2/...",
     licences = ["apache-2.0"],
@@ -512,19 +332,6 @@ go_get(
     ],
     hashes = [
         "9f0a3cc245f3314d4d58e9d707ede245836f776830d1cd2667f563b37ad89d46",
-    ],
-)
-
-go_get(
-    name = "gomemcache",
-    get = "github.com/bradfitz/gomemcache",
-    install = [
-        "memcache",
-    ],
-    licences = ["apache-2.0"],
-    revision = "a41fca850d0b6f392931a78cbae438803ea0b886",
-    hashes = [
-        "1ffe2aef867d2609e0de0f23f817fa790ff5d5690e8ba430e71e1e508b765631",
     ],
 )
 
@@ -585,39 +392,6 @@ go_get(
     revision = "f65c72e2690dc4b403c8bd637baf4611cd4c069b",
     hashes = [
         "f906a4e8b50e59eeef9f3b638c00211ed58558b9ef28c1d2e926670e1f874818",
-    ],
-)
-
-go_get(
-    name = "snappy",
-    get = "github.com/golang/snappy",
-    licences = ["bsd-3-clause"],
-    revision = "v0.0.1",
-    hashes = [
-        "ddaeb18a5d8a616bb21453359f2f6987488944fa4df59845ed6f3fcb5675c653",
-    ],
-)
-
-go_get(
-    name = "uuid",
-    get = "github.com/pborman/uuid",
-    licences = ["bsd-3-clause"],
-    revision = "v1.2.1",
-    deps = [
-        ":google_uuid",
-    ],
-    hashes = [
-        "1208c227f4035d8957d641ccaf6ecbeee515be1ac1eaccc9cb6383afc3af19f2",
-    ],
-)
-
-go_get(
-    name = "google_uuid",
-    get = "github.com/google/uuid",
-    licences = ["bsd-3-clause"],
-    revision = "v1.1.2",
-    hashes = [
-        "f14398d9c01543a46f9f35ff08d082abc940cfed185654fe58fe34a76d80720f",
     ],
 )
 
@@ -685,105 +459,6 @@ go_get(
     ],
     hashes = [
         "8d3df5d142121396ccab6d8414aad48ed187cd280d00713c925c9dc0c402e6bb",
-    ],
-)
-
-go_get(
-    name = "docker",
-    get = "github.com/docker/docker",
-    install = [
-        "api/types/...",
-        "client",
-    ],
-    licences = ["apache-2.0"],
-    repo = "github.com/moby/moby",
-    revision = "v17.03.2-ce",
-    strip = [
-        "vendor",
-    ],
-    deps = [
-        ":docker-distribution",
-        ":docker-go-connections",
-        ":docker-go-units",
-        ":x_time_rate",
-    ],
-    hashes = [
-        "21f4dbed0a24250b2b6a5fdddf54f7f1f58c2bf857395314ed76cde0b8154169",
-    ],
-)
-
-go_get(
-    name = "docker-go-connections",
-    get = "github.com/docker/go-connections",
-    licences = ["apache-2.0"],
-    revision = "v0.4.0",
-    deps = [
-        ":errors",
-    ],
-    hashes = [
-        "920d82dc00a2ef1f4de2b827e336962e0f396c9608c4c2bdd953da16180892ff",
-    ],
-)
-
-go_get(
-    name = "docker-go-units",
-    get = "github.com/docker/go-units",
-    licences = ["apache-2.0"],
-    revision = "v0.4.0",
-    hashes = [
-        "ae04b6b932f0f1562b2deb932f7d5300a17c9e32a97424ca51a3c0281f05cdef",
-    ],
-)
-
-go_get(
-    name = "docker-distribution",
-    get = "github.com/docker/distribution",
-    install = [
-        "",
-        "reference",
-        "digestset",
-    ],
-    licences = ["apache-2.0"],
-    revision = "v2.7.1",
-    strip = [
-        "vendor",
-    ],
-    deps = [
-        ":opencontainers-godigest",
-        ":opencontainers-imagespec",
-    ],
-    hashes = [
-        "602cd454b021f39b73ccbb51a2b66ab11154f9086751a7fea3c7a2d881e9299e",
-    ],
-)
-
-go_get(
-    name = "opencontainers-godigest",
-    get = "github.com/opencontainers/go-digest",
-    install = [
-        "",
-    ],
-    licences = ["apache-2.0"],
-    revision = "v1.0.0",
-    hashes = [
-        "3e4a6193395c946dfa682c5f582ec6ad3710633e972206602796e0cac8aa564b",
-    ],
-)
-
-go_get(
-    name = "opencontainers-imagespec",
-    get = "github.com/opencontainers/image-spec",
-    install = [
-        "specs-go",
-        "specs-go/v1",
-    ],
-    licences = ["apache-2.0"],
-    revision = "v1.0.1",
-    deps = [
-        ":opencontainers-godigest",
-    ],
-    hashes = [
-        "1fc5497a6bbfeaac4c186026faf071e2a413c58c90d468e890109403934e561f",
     ],
 )
 
