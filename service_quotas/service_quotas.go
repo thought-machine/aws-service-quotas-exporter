@@ -60,6 +60,8 @@ type QuotaUsage struct {
 	Quota float64
 }
 
+// Identifier for the service quota. Either the resource name in case
+// the quota is for multiple resources or the name of the quota
 func (q QuotaUsage) Identifier() string {
 	if q.ResourceName != nil {
 		return *q.ResourceName
