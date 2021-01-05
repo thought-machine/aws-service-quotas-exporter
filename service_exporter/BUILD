@@ -12,3 +12,12 @@ go_library(
         "//third_party/go:prometheus",
     ]
 )
+
+go_test(
+    name = "test",
+    srcs = glob(["*_test.go"]),
+    deps = [
+        ":serviceexporter",
+        "//third_party/go:testify",
+    ],
+)
