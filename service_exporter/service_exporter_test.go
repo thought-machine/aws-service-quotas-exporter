@@ -70,11 +70,13 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 		quotas: []servicequotas.QuotaUsage{firstQ, secondQ},
 	}
 
+	ch := make(chan struct{})
 	exporter := &ServiceQuotasExporter{
 		metricsRegion:  region,
 		quotasClient:   quotasClient,
 		metrics:        map[string]Metric{},
 		refreshPeriod:  360,
+		waitForMetrics: ch,
 	}
 
 	exporter.createQuotasAndDescriptions()
