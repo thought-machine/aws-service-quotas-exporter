@@ -24,6 +24,9 @@ const (
 
 	onDemandInstanceRequestsName = "ondemand_instance_requests"
 	onDemandInstanceRequestsDesc = "ondemand instance requests"
+
+	availableIPsPerSubnetName = "available_IPs_per_subnet"
+	availableIPsPerSubnetDesc = "available IPs per subnet"
 )
 
 type RulesPerSecurityGroupUsageCheck struct {
@@ -61,6 +64,40 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 			Usage:        float64(inboundRules + outboundRules),
 		}
 		quotaUsages = append(quotaUsages, quotaUsage)
+	}
+
+	return quotaUsages, nil
+}
+
+type AvailableIPsPerSubnetUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns the usage for each subnet ID with the usage value
+// being the number of available IPv4 addresses in that subnet or
+// an error
+func (c *AvailableIPsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
+	quotaUsages := []QuotaUsage{}
+
+	params := &ec2.DescribeSubnetsInput{} // do we need dryrun false flag here?
+	err := c.client.DescribeSubnetsPages(params,
+		func(page *ec2.DescribeSubnetsOutput, lastPage bool) bool {
+			if page != nil {
+				for _, subnet := range page.Subnets {
+					quotaUsage := QuotaUsage{
+						Name:         availableIPsPerSubnetName,
+						ResourceName: subnet.SubnetArn,
+						Description:  availableIPsPerSubnetDesc,
+						Usage:        float64(*subnet.AvailableIpAddressCount),
+					}
+					quotaUsages = append(quotaUsages, quotaUsage)
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
 
 	return quotaUsages, nil
@@ -212,7 +249,7 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 }
 
 type StandardSpotInstanceRequestsUsageCheck struct {
-	client      ec2iface.EC2API
+	client ec2iface.EC2API
 }
 
 // Usage returns vCPU usage for all standard (A, C, D, H, I, M, R, T,
@@ -237,7 +274,7 @@ func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 }
 
 type RunningOnDemandStandardInstancesUsageCheck struct {
-	client      ec2iface.EC2API
+	client ec2iface.EC2API
 }
 
 // Usage returns vCPU usage for all running on-demand standard (A, C,
