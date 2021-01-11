@@ -63,16 +63,16 @@ func (e *ServiceQuotasExporter) refreshMetrics() {
 func (e *ServiceQuotasExporter) updateMetrics() {
 	quotas, err := e.quotasClient.QuotasAndUsage()
 	if err != nil {
-		log.Errorf("Can not retrieve quotas and limits: %s", err)
-	} else {
-		for _, quota := range quotas {
-			resourceID := quota.Identifier()
-			log.Infof("Refreshing metrics for resource (%s)", resourceID)
-			if resourceMetric, ok := e.metrics[resourceID]; ok {
-				resourceMetric.usage = quota.Usage
-				resourceMetric.limit = quota.Quota
-				e.metrics[resourceID] = resourceMetric
-			}
+		log.Fatalf("Could not retrieve quotas and limits: %s", err)
+	}
+
+	for _, quota := range quotas {
+		resourceID := quota.Identifier()
+		log.Infof("Refreshing metrics for resource (%s)", resourceID)
+		if resourceMetric, ok := e.metrics[resourceID]; ok {
+			resourceMetric.usage = quota.Usage
+			resourceMetric.limit = quota.Quota
+			e.metrics[resourceID] = resourceMetric
 		}
 	}
 }
@@ -80,7 +80,7 @@ func (e *ServiceQuotasExporter) updateMetrics() {
 func (e *ServiceQuotasExporter) createQuotasAndDescriptions() {
 	quotas, err := e.quotasClient.QuotasAndUsage()
 	if err != nil {
-		log.Errorf("Can not retrieve quotas and limits: %s", err)
+		log.Fatalf("Could not retrieve quotas and limits: %s", err)
 	}
 
 	for _, quota := range quotas {
