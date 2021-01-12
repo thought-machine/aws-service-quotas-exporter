@@ -14,15 +14,16 @@ import (
 var log = logging.WithFields(logging.Fields{})
 
 var opts struct {
-	Port    int    `long:"port" short:"p" default:"9090" description:"Port on which to serve."`
-	Region  string `long:"region" short:"r" env:"AWS_REGION" required:"true" description:"AWS region name"`
-	Profile string `long:"profile" short:"f" env:"AWS_PROFILE" default:"" description:"Named AWS profile to be used"`
+	Port          int    `long:"port" short:"p" default:"9090" description:"Port on which to serve."`
+	Region        string `long:"region" short:"r" env:"AWS_REGION" required:"true" description:"AWS region name"`
+	Profile       string `long:"profile" short:"f" env:"AWS_PROFILE" default:"" description:"Named AWS profile to be used"`
+	RefreshPeriod int    `long:"refresh-period" default:"360" description:"Refresh period in seconds"`
 }
 
 func main() {
 	flags.Parse(&opts)
 
-	quotasExporter, err := serviceexporter.NewServiceQuotasExporter(opts.Region, opts.Profile)
+	quotasExporter, err := serviceexporter.NewServiceQuotasExporter(opts.Region, opts.Profile, opts.RefreshPeriod)
 	if err != nil {
 		log.Fatalf("Failed to create exporter: %s", err)
 	}

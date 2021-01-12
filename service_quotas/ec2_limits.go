@@ -26,6 +26,8 @@ const (
 	onDemandInstanceRequestsDesc = "ondemand instance requests"
 )
 
+// RulesPerSecurityGroupUsageCheck implements the UsageCheck interface
+// for rules per security group
 type RulesPerSecurityGroupUsageCheck struct {
 	client ec2iface.EC2API
 }
@@ -66,6 +68,8 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 	return quotaUsages, nil
 }
 
+// SecurityGroupsPerENIUsageCheck implements the UsageCheck interface
+// for security groups per ENI
 type SecurityGroupsPerENIUsageCheck struct {
 	client ec2iface.EC2API
 }
@@ -100,6 +104,8 @@ func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 	return quotaUsages, nil
 }
 
+// SecurityGroupsPerRegionUsageCheck implements the UsageCheck interface
+// for security groups per region
 type SecurityGroupsPerRegionUsageCheck struct {
 	client ec2iface.EC2API
 }
@@ -211,6 +217,8 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 	return totalvCPUs, nil
 }
 
+// StandardSpotInstanceRequestsUsageCheck implements the UsageCheck interface
+// for standard spot instance requests
 type StandardSpotInstanceRequestsUsageCheck struct {
 	client      ec2iface.EC2API
 }
@@ -236,6 +244,8 @@ func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 	return usage, nil
 }
 
+// RunningOnDemandStandardInstancesUsageCheck implements the UsageCheck interface
+// for standard on-demand instances
 type RunningOnDemandStandardInstancesUsageCheck struct {
 	client      ec2iface.EC2API
 }
