@@ -5,20 +5,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockEC2Client struct {
-	ec2iface.EC2API
-
-	err                               error
-	DescribeSecurityGroupsResponse    *ec2.DescribeSecurityGroupsOutput
-	DescribeNetworkInterfacesResponse *ec2.DescribeNetworkInterfacesOutput
-	InstancesFilters                  []*ec2.Filter
-	DescribeInstancesResponse         *ec2.DescribeInstancesOutput
-}
 
 func (m *mockEC2Client) DescribeSecurityGroupsPages(input *ec2.DescribeSecurityGroupsInput, fn func(*ec2.DescribeSecurityGroupsOutput, bool) bool) error {
 	fn(m.DescribeSecurityGroupsResponse, true)
