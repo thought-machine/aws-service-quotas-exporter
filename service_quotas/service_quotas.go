@@ -50,17 +50,16 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]Us
 
 // QuotaUsage represents service quota usage
 type QuotaUsage struct {
-	// Name is the name of the resource, eg. the ID of the VPC or
-	// the same as the description for single-resource quotas
-	// (eg. VPCs per region)
 	// Name is the name of the quota (eg. spot_instance_requests)
 	// or the name given to the piece of exported availibility
- 	// information (eg. available_IPs_per_subnet)
+	// information (eg. available_IPs_per_subnet)
 	Name string
 	// ResourceName is the name of the resource in case the quota
 	// is for multiple resources. As an example for "rules per
 	// security group" the ResourceName will be the ARN of the
-	// security group
+	// security group.
+	// ResourceName, in the case of `available IPs per subnet`,
+	// is constructed as the "subnet ARN" + "|" + "CIDR block"
 	ResourceName *string
 	// Description is the name of the service quota (eg. "Inbound
 	// or outbound rules per security group")
@@ -70,23 +69,6 @@ type QuotaUsage struct {
 	// Quota is the current quota
 	Quota float64
 }
-
-// AvailabilityInfo reprents the subnet IP availability
-// type AvailabilityInfo struct {
-// 	// Name is the name given to the piece of exported availibility
-// 	// information (eg. available_IPs_per_subnet)
-// 	Name string
-// 	// Description is the name given to the piece of exported
-// 	// availibility information (eg. available IPs per subnet)
-// 	Description string
-// 	// ResourceName is the subnet ARN followed by its CIDR block
-// 	ResourceName *string
-// 	// Usage is the IP usage in the subnet, calculated using ((max
-// 	// number of IPs) - (available IPs)) / (max number of IPs)
-// 	Usage float64
-// 	// Quota is the max number of IPs in the subnet
-// 	Quota float64
-// }
 
 func (q QuotaUsage) Identifier() string {
 	if q.ResourceName != nil {
