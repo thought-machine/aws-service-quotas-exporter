@@ -51,7 +51,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetIpAvailability, "%w", err)
+		return nil, errors.Wrapf(ErrFailedToGetAvailability, "%w", err)
 	}
 
 	return availabilityInfos, nil

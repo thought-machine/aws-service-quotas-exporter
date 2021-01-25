@@ -13,12 +13,10 @@ import (
 
 // Errors returned from this package
 var (
-	ErrInvalidRegion             = errors.New("invalid region")
-	ErrFailedToListQuotas        = errors.New("failed to list quotas")
-	ErrFailedToGetUsage          = errors.New("failed to get usage")
-	ErrFailedToGetSubnet         = errors.New("failed to get subnet")
-	ErrFailedToGetCidrBlock      = errors.New("failed to get CIDR block of subnet")
-	ErrFailedToGetIpAvailability = errors.New("failed to get IP availability")
+	ErrInvalidRegion           = errors.New("invalid region")
+	ErrFailedToListQuotas      = errors.New("failed to list quotas")
+	ErrFailedToGetUsage        = errors.New("failed to get usage")
+	ErrFailedToGetAvailability = errors.New("failed to get availability")
 )
 
 var services = []string{"ec2", "vpc"}
