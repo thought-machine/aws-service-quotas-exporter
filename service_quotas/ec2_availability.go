@@ -14,14 +14,14 @@ const (
 	availableIPsPerSubnetDesc = "available IPs per subnet"
 )
 
-type AvailableIpsPerSubnetCheck struct {
+type AvailableIpsPerSubnetUsageCheck struct {
 	client ec2iface.EC2API
 }
 
 // Usage returns the usage for each subnet ID with the usage value
 // being the number of available IPv4 addresses in that subnet or
 // an error
-func (c *AvailableIpsPerSubnetCheck) Usage() ([]QuotaUsage, error) {
+func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 	availabilityInfos := []QuotaUsage{}
 
 	params := &ec2.DescribeSubnetsInput{}

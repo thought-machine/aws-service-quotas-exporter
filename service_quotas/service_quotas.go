@@ -42,7 +42,7 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]Us
 	}
 
 	otherUsageChecks := []UsageCheck{
-		&AvailableIpsPerSubnetCheck{ec2Client},
+		&AvailableIpsPerSubnetUsageCheck{ec2Client},
 	}
 
 	return serviceQuotasUsageChecks, otherUsageChecks
