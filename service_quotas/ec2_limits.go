@@ -276,6 +276,7 @@ type AvailableIpsPerSubnetUsageCheck struct {
 // an error
 func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 	availabilityInfos := []QuotaUsage{}
+	var conversionErr error
 
 	params := &ec2.DescribeSubnetsInput{}
 	err := c.client.DescribeSubnetsPages(params,
@@ -285,11 +286,12 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 					cidrBlock := *subnet.CidrBlock
 					blockedBits, err := strconv.Atoi(cidrBlock[len(cidrBlock)-2:])
 					if err != nil {
-						continue
+						conversionErr = errors.Wrapf("Type conversion error: %w", err)
+						// stops paging if strconv experiences an error
+						return true
 					}
 					maxNumOfIPs := maths.Pow(2, 32-float64(blockedBits))
 					usage := (maxNumOfIPs - float64(*subnet.AvailableIpAddressCount)) / maxNumOfIPs
-					// resourceName := *subnet.SubnetArn + "|" + *subnet.CidrBlock
 					resourceDescription := availableIPsPerSubnetDesc + *subnet.CidrBlock
 					availabilityInfo := QuotaUsage{
 						Name:         availableIPsPerSubnetName,
@@ -306,6 +308,10 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 	)
 	if err != nil {
 		return nil, errors.Wrapf(ErrFailedToGetAvailability, "%w", err)
+	}
+
+	if conversionErr != nil {
+		return nil, conversionErr
 	}
 
 	return availabilityInfos, nil
