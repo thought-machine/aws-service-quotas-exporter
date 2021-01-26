@@ -386,8 +386,8 @@ func TestAvailableIpsPerSubnetUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:         availableIPsPerSubnetName,
-					ResourceName: aws.String("subnet-arn|100.10.10.0/20"),
-					Description:  availableIPsPerSubnetDesc,
+					ResourceName: aws.String("subnet-arn"),
+					Description:  availableIPsPerSubnetDesc + "100.10.10.0/20",
 					Usage:        float64(0),
 					Quota:        float64(4096),
 				},
@@ -418,22 +418,22 @@ func TestAvailableIpsPerSubnetUsage(t *testing.T) {
 			expectedUsage: []QuotaUsage{
 				{
 					Name:         availableIPsPerSubnetName,
-					ResourceName: aws.String("subnet-arn-1|100.10.10.0/20"),
-					Description:  availableIPsPerSubnetDesc,
+					ResourceName: aws.String("subnet-arn-1"),
+					Description:  availableIPsPerSubnetDesc + "100.10.10.0/20",
 					Usage:        float64(0),
 					Quota:        float64(4096),
 				},
 				{
 					Name:         availableIPsPerSubnetName,
-					ResourceName: aws.String("subnet-arn-2|100.10.10.0/21"),
-					Description:  availableIPsPerSubnetDesc,
+					ResourceName: aws.String("subnet-arn-2"),
+					Description:  availableIPsPerSubnetDesc + "100.10.10.0/21",
 					Usage:        float64(1),
 					Quota:        float64(2048),
 				},
 				{
 					Name:         availableIPsPerSubnetName,
-					ResourceName: aws.String("subnet-arn-3|100.10.10.0/22"),
-					Description:  availableIPsPerSubnetDesc,
+					ResourceName: aws.String("subnet-arn-3"),
+					Description:  availableIPsPerSubnetDesc + "100.10.10.0/22",
 					Usage:        float64(0),
 					Quota:        float64(1024),
 				},
