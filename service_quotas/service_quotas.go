@@ -76,11 +76,11 @@ func (q QuotaUsage) Identifier() string {
 // ServiceQuotas is an implementation for retrieving service quotas
 // and their limits
 type ServiceQuotas struct {
-	session       *session.Session
-	region        string
-	quotasService servicequotasiface.ServiceQuotasAPI
-	usageChecks   map[string]UsageCheck
-	otherChecks   []UsageCheck
+	session                  *session.Session
+	region                   string
+	quotasService            servicequotasiface.ServiceQuotasAPI
+	serviceQuotasUsageChecks map[string]UsageCheck
+	otherUsageChecks         []UsageCheck
 }
 
 // QuotasInterface is an interface for retrieving AWS service
@@ -108,14 +108,14 @@ func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
 	}
 
 	quotasService := awsservicequotas.New(awsSession, aws.NewConfig().WithRegion(region))
-	checks, availabilityChecks := newUsageChecks(awsSession, aws.NewConfig().WithRegion(region))
+	serviceQuotasChecks, otherChecks := newUsageChecks(awsSession, aws.NewConfig().WithRegion(region))
 
 	quotas := &ServiceQuotas{
-		session:       awsSession,
-		region:        region,
-		quotasService: quotasService,
-		usageChecks:   checks,
-		otherChecks:   availabilityChecks,
+		session:                  awsSession,
+		region:                   region,
+		quotasService:            quotasService,
+		serviceQuotasUsageChecks: serviceQuotasChecks,
+		otherUsageChecks:         otherChecks,
 	}
 	return quotas, nil
 }
@@ -135,7 +135,7 @@ func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
 		func(page *awsservicequotas.ListServiceQuotasOutput, lastPage bool) bool {
 			if page != nil {
 				for _, quota := range page.Quotas {
-					if check, ok := s.usageChecks[*quota.QuotaCode]; ok {
+					if check, ok := s.serviceQuotasUsageChecks[*quota.QuotaCode]; ok {
 						quotaUsages, err := check.Usage()
 						if err != nil {
 							usageErr = err
@@ -178,7 +178,7 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 		}
 	}
 
-	for _, availability := range s.otherChecks {
+	for _, availability := range s.otherUsageChecks {
 		serviceAvailabilities, err := availability.Usage()
 		if err != nil {
 			return nil, err
