@@ -160,10 +160,10 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
     }
 
     otherUsageChecks := []UsageCheck{
-		&MyOtherUsageCheck{ec2Client},
-	}
+        &MyOtherUsageCheck{ec2Client},
+    }
 
-	return serviceQuotasUsageChecks, otherUsageChecks
+    return serviceQuotasUsageChecks, otherUsageChecks
 }
 ```
 
