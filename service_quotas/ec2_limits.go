@@ -289,7 +289,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 					cidrBlock := *subnet.CidrBlock
 					blockedBits, err := strconv.Atoi(cidrBlock[len(cidrBlock)-2:])
 					if err != nil {
-						conversionErr = errors.Wrapf("Type conversion error: %w", err)
+						conversionErr = errors.Wrapf(ErrFailedToConvertCidr, "%w", err)
 						// stops paging if strconv experiences an error
 						return true
 					}

@@ -17,6 +17,7 @@ var (
 	ErrFailedToListQuotas      = errors.New("failed to list quotas")
 	ErrFailedToGetUsage        = errors.New("failed to get usage")
 	ErrFailedToGetAvailability = errors.New("failed to get availability")
+	ErrFailedToConvertCidr     = errors.New("failed to convert CIDR block from string to int")
 )
 
 var services = []string{"ec2", "vpc"}
