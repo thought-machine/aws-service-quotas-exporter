@@ -362,6 +362,27 @@ func TestAvailableIpsPerSubnetUsageWithError(t *testing.T) {
 	assert.Nil(t, usage)
 }
 
+func TestAvailableIpsPerSubnetUsageWithInvalidCidrConversion(t *testing.T) {
+	mockClient := &mockEC2Client{
+		DescribeSubnetsResponse: &ec2.DescribeSubnetsOutput{
+			Subnets: []*ec2.Subnet{
+				{
+					AvailabilityZone:        aws.String("eu-west-1"),
+					AvailableIpAddressCount: aws.Int64(4096),
+					CidrBlock:               aws.String("invalid-cidr"),
+					SubnetArn:               aws.String("subnet-arn"),
+				},
+			},
+		},
+	}
+	check := AvailableIpsPerSubnetUsageCheck{mockClient}
+	usage, err := check.Usage()
+
+	assert.Error(t, err)
+	assert.True(t, errors.Is(err, ErrFailedToConvertCidr))
+	assert.Nil(t, usage)
+}
+
 func TestAvailableIpsPerSubnetUsage(t *testing.T) {
 	testCases := []struct {
 		name          string
