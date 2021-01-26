@@ -274,6 +274,9 @@ type AvailableIpsPerSubnetUsageCheck struct {
 // Usage returns the usage for each subnet ID with the usage value
 // being the number of available IPv4 addresses in that subnet or
 // an error
+// Note that the Description of the resource here is constructed
+// using `availableIPsPerSubnetDesc` defined previously as well as
+// the subnet's CIDR block
 func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 	availabilityInfos := []QuotaUsage{}
 	var conversionErr error

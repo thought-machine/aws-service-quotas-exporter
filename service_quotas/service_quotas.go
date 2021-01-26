@@ -56,8 +56,6 @@ type QuotaUsage struct {
 	// is for multiple resources. As an example for "rules per
 	// security group" the ResourceName will be the ARN of the
 	// security group.
-	// ResourceName, in the case of `available IPs per subnet`,
-	// is constructed as the "subnet ARN" + "|" + "CIDR block"
 	ResourceName *string
 	// Description is the name of the service quota (eg. "Inbound
 	// or outbound rules per security group")
