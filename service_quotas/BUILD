@@ -2,7 +2,7 @@ go_library(
     name = "servicequotas",
     srcs = glob(
         ["*.go"],
-        exclude = ["*_test.go"],
+        exclude = ["*_test.go", "mock_ec2_client.go"],
     ),
     visibility = ["//..."],
     deps = [
@@ -13,7 +13,7 @@ go_library(
 
 go_test(
     name = "test",
-    srcs = glob(["*_test.go"]),
+    srcs = glob(["*_test.go", "mock_ec2_client.go"]),
     deps = [
         ":servicequotas",
         "//third_party/go:testify",

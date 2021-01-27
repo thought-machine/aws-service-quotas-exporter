@@ -1,6 +1,9 @@
 package servicequotas
 
 import (
+	maths "math"
+	"strconv"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -24,6 +27,9 @@ const (
 
 	onDemandInstanceRequestsName = "ondemand_instance_requests"
 	onDemandInstanceRequestsDesc = "ondemand instance requests"
+
+	availableIPsPerSubnetName = "available_ips_per_subnet"
+	availableIPsPerSubnetDesc = "available IPs per subnet, CIDR: "
 )
 
 // RulesPerSecurityGroupUsageCheck implements the UsageCheck interface
@@ -220,7 +226,7 @@ func standardInstancesCPUs(ec2Service ec2iface.EC2API, spotInstances bool) (int6
 // StandardSpotInstanceRequestsUsageCheck implements the UsageCheck interface
 // for standard spot instance requests
 type StandardSpotInstanceRequestsUsageCheck struct {
-	client      ec2iface.EC2API
+	client ec2iface.EC2API
 }
 
 // Usage returns vCPU usage for all standard (A, C, D, H, I, M, R, T,
@@ -247,7 +253,7 @@ func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 // RunningOnDemandStandardInstancesUsageCheck implements the UsageCheck interface
 // for standard on-demand instances
 type RunningOnDemandStandardInstancesUsageCheck struct {
-	client      ec2iface.EC2API
+	client ec2iface.EC2API
 }
 
 // Usage returns vCPU usage for all running on-demand standard (A, C,
@@ -269,4 +275,57 @@ func (c *RunningOnDemandStandardInstancesUsageCheck) Usage() ([]QuotaUsage, erro
 		},
 	}
 	return usage, nil
+}
+
+type AvailableIpsPerSubnetUsageCheck struct {
+	client ec2iface.EC2API
+}
+
+// Usage returns the usage for each subnet ID with the usage value
+// being the number of available IPv4 addresses in that subnet or
+// an error
+// Note that the Description of the resource here is constructed
+// using `availableIPsPerSubnetDesc` defined previously as well as
+// the subnet's CIDR block
+func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
+	availabilityInfos := []QuotaUsage{}
+	var conversionErr error
+
+	params := &ec2.DescribeSubnetsInput{}
+	err := c.client.DescribeSubnetsPages(params,
+		func(page *ec2.DescribeSubnetsOutput, lastPage bool) bool {
+			if page != nil {
+				for _, subnet := range page.Subnets {
+					cidrBlock := *subnet.CidrBlock
+					blockedBits, err := strconv.Atoi(cidrBlock[len(cidrBlock)-2:])
+					if err != nil {
+						conversionErr = errors.Wrapf(ErrFailedToConvertCidr, "%w", err)
+						// stops paging if strconv experiences an error
+						return true
+					}
+					maxNumOfIPs := maths.Pow(2, 32-float64(blockedBits))
+					usage := (maxNumOfIPs - float64(*subnet.AvailableIpAddressCount)) / maxNumOfIPs
+					resourceDescription := availableIPsPerSubnetDesc + *subnet.CidrBlock
+					availabilityInfo := QuotaUsage{
+						Name:         availableIPsPerSubnetName,
+						ResourceName: subnet.SubnetArn,
+						Description:  resourceDescription,
+						Usage:        float64(usage),
+						Quota:        float64(maxNumOfIPs),
+					}
+					availabilityInfos = append(availabilityInfos, availabilityInfo)
+				}
+			}
+			return !lastPage
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+	}
+
+	if conversionErr != nil {
+		return nil, conversionErr
+	}
+
+	return availabilityInfos, nil
 }

@@ -6,11 +6,13 @@ That makes it suitable for AWS accounts that do not have [Business or Enterprise
 support plan][3], required by the [AWS Support API][4] (AWS
 Trusted Advisor). This exporter also provides some metrics that are
 not available via the AWS Trusted Advisor, such as "rules per security
-group" and "spot instance requests".
+group" and "spot instance requests". Other metrics exported through other AWS APIs
+can also be integrated with minimal effort, an example of such is "available IPs 
+per subnet" as seen in //service_quotas/ec2_limits.go.
 
 # Metrics
 
-There are 5 metrics exposed:
+There are 6 metrics exposed:
 
 1. Rules per security group
 ```
@@ -42,6 +44,12 @@ aws_ondemand_instance_requests_limit_total{region="eu-west-1",resource="ondemand
 aws_ondemand_instance_requests_used_total{region="eu-west-1",resource="ondemand_instance_requests"} 440
 ```
 
+6. Available IPs per subnet
+```
+aws_available_ips_per_subnet_limit_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 4096
+aws_available_ips_per_subnet_used_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 0.0244140625
+```
+
 # IAM Permissions
 
 The AWS Service Quotas requires permissions for the following actions
@@ -50,6 +58,7 @@ to be able to run:
  * `ec2:DescribeSecurityGroups`
  * `ec2:DescribeNetworkInterfaces`
  * `ec2:DescribeInstances`
+ * `ec2:DescribeSubnets`
  * `servicequotas:ListServiceQuotas`
 
 Example IAM policy
@@ -62,6 +71,7 @@ Example IAM policy
           "ec2:DescribeSecurityGroups",
           "ec2:DescribeNetworkInterfaces",
           "ec2:DescribeInstances",
+          "ec2:DescribeSubnets",
           "servicequotas:ListServiceQuotas",
       ],
       "Resource": "*"
@@ -135,14 +145,26 @@ func (c *MyUsageCheck) Usage() ([]QuotaUsage, error) {
 
 ### Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
 
+If the check uses the Service Quotas API, then it needs to be added as part of 
+`serviceQuotasUsageChecks` with its service quota code (examples given in the
+[using AWS CLI to manage service quota requests page][5]). Otherwise, the check can
+just be added to `otherUsageChecks`.
+
 `service_quotas/service_quotas.go`
 ```
 func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]UsageCheck {
     myClient := someawsclient.New(c, cfgs)
-    return map[string]UsageCheck{
+
+    serviceQuotasUsageChecks := map[string]UsageCheck{
         //... other usage checks
         "L-SERVICE_QUOTAS_CODE": &MyUsageCheck{myClient},
     }
+
+    otherUsageChecks := []UsageCheck{
+        &MyOtherUsageCheck{ec2Client},
+    }
+
+    return serviceQuotasUsageChecks, otherUsageChecks
 }
 ```
 
@@ -153,3 +175,4 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) map[string]Usa
 [2]: https://prometheus.io/
 [3]: https://aws.amazon.com/premiumsupport/plans/
 [4]: https://docs.aws.amazon.com/awssupport/latest/APIReference/Welcome.html
+[5]: https://aws.amazon.com/premiumsupport/knowledge-center/troubleshoot-service-quotas-cli-commands/
