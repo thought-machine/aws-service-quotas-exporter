@@ -358,7 +358,7 @@ func TestAvailableIpsPerSubnetUsageWithError(t *testing.T) {
 	usage, err := check.Usage()
 
 	assert.Error(t, err)
-	assert.True(t, errors.Is(err, ErrFailedToGetAvailability))
+	assert.True(t, errors.Is(err, ErrFailedToGetUsage))
 	assert.Nil(t, usage)
 }
 

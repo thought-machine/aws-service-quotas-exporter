@@ -28,7 +28,7 @@ const (
 	onDemandInstanceRequestsName = "ondemand_instance_requests"
 	onDemandInstanceRequestsDesc = "ondemand instance requests"
 
-	availableIPsPerSubnetName = "available_IPs_per_subnet"
+	availableIPsPerSubnetName = "available_ips_per_subnet"
 	availableIPsPerSubnetDesc = "available IPs per subnet, CIDR: "
 )
 
@@ -310,7 +310,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetAvailability, "%w", err)
+		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
 	}
 
 	if conversionErr != nil {

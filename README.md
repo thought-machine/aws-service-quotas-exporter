@@ -7,7 +7,8 @@ support plan][3], required by the [AWS Support API][4] (AWS
 Trusted Advisor). This exporter also provides some metrics that are
 not available via the AWS Trusted Advisor, such as "rules per security
 group" and "spot instance requests". Other metrics exported through other AWS APIs
-can also be integrated with minimal effort, an example of such is "available IPs per subnet" as seen in //service_quotas/ec2_availability.go.
+can also be integrated with minimal effort, an example of such is "available IPs 
+per subnet" as seen in //service_quotas/ec2_limits.go.
 
 # Metrics
 
@@ -45,8 +46,8 @@ aws_ondemand_instance_requests_used_total{region="eu-west-1",resource="ondemand_
 
 6. Available IPs per subnet
 ```
-aws_available_IPs_per_subnet_limit_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn|10.100.100.0/20"} 4096
-aws_available_IPs_per_subnet_used_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn|10.100.100.0/20"} 0.0244140625
+aws_available_ips_per_subnet_limit_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 4096
+aws_available_ips_per_subnet_used_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 0.0244140625
 ```
 
 # IAM Permissions
