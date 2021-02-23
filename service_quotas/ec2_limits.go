@@ -1,7 +1,7 @@
 package servicequotas
 
 import (
-	maths "math"
+	"math"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,7 +29,7 @@ const (
 	onDemandInstanceRequestsDesc = "ondemand instance requests"
 
 	availableIPsPerSubnetName = "available_ips_per_subnet"
-	availableIPsPerSubnetDesc = "available IPs per subnet, CIDR: "
+	availableIPsPerSubnetDesc = "available IPs per subnet"
 )
 
 // RulesPerSecurityGroupUsageCheck implements the UsageCheck interface
@@ -303,13 +303,12 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 						// stops paging if strconv experiences an error
 						return true
 					}
-					maxNumOfIPs := maths.Pow(2, 32-float64(blockedBits))
+					maxNumOfIPs := math.Pow(2, 32-float64(blockedBits))
 					usage := (maxNumOfIPs - float64(*subnet.AvailableIpAddressCount)) / maxNumOfIPs
-					resourceDescription := availableIPsPerSubnetDesc + *subnet.CidrBlock
 					availabilityInfo := QuotaUsage{
 						Name:         availableIPsPerSubnetName,
-						ResourceName: subnet.SubnetArn,
-						Description:  resourceDescription,
+						ResourceName: subnet.SubnetId,
+						Description:  availableIPsPerSubnetDesc,
 						Usage:        float64(usage),
 						Quota:        float64(maxNumOfIPs),
 					}
