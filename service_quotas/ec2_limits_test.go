@@ -431,6 +431,12 @@ func TestAvailableIpsPerSubnetUsage(t *testing.T) {
 				},
 				{
 					AvailabilityZone:        aws.String("eu-west-1"),
+					AvailableIpAddressCount: aws.Int64(100),
+					CidrBlock:               aws.String("100.10.10.0/21"),
+					SubnetId:                aws.String("subnet-id-2"),
+				},
+				{
+					AvailabilityZone:        aws.String("eu-west-1"),
 					AvailableIpAddressCount: aws.Int64(1024),
 					CidrBlock:               aws.String("100.10.10.0/22"),
 					SubnetId:                aws.String("subnet-id-3"),
@@ -448,7 +454,14 @@ func TestAvailableIpsPerSubnetUsage(t *testing.T) {
 					Name:         availableIPsPerSubnetName,
 					ResourceName: aws.String("subnet-id-2"),
 					Description:  availableIPsPerSubnetDesc,
-					Usage:        float64(1),
+					Usage:        float64(2048),
+					Quota:        float64(2048),
+				},
+				{
+					Name:         availableIPsPerSubnetName,
+					ResourceName: aws.String("subnet-id-2"),
+					Description:  availableIPsPerSubnetDesc,
+					Usage:        float64(1948),
 					Quota:        float64(2048),
 				},
 				{
