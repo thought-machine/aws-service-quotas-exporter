@@ -30,12 +30,12 @@ func TestASGUsageCheckWithError(t *testing.T) {
 
 func TestASGUsageCheck(t *testing.T) {
 	mockClient := &mockAutoScalingClient{
-		err: errors.New("some err"),
-		DescribeAutoScalingGroupsResponse: autoscaling.DescribeAutoScalingGroupsOutput{
+		err: nil,
+		DescribeAutoScalingGroupsResponse: &autoscaling.DescribeAutoScalingGroupsOutput{
 			AutoScalingGroups: []*autoscaling.Group{
 				{
 					AutoScalingGroupName: aws.String("asg1"),
-					Instances:            []*autoscaling.Instance{
+					Instances: []*autoscaling.Instance{
 						{LifecycleState: aws.String("Terminating")},
 						{LifecycleState: aws.String("Terminating:Wait")},
 						{LifecycleState: aws.String("Terminating:Proceed")},
@@ -45,7 +45,7 @@ func TestASGUsageCheck(t *testing.T) {
 						{LifecycleState: aws.String("InService")},
 						{LifecycleState: aws.String("Pending")},
 					},
-					MaxSize:              aws.Int64(7),
+					MaxSize: aws.Int64(7),
 				},
 				{
 					AutoScalingGroupName: aws.String("asg2"),
@@ -54,13 +54,13 @@ func TestASGUsageCheck(t *testing.T) {
 				},
 				{
 					AutoScalingGroupName: aws.String("asg3"),
-					Instances:            []*autoscaling.Instance{
+					Instances: []*autoscaling.Instance{
 						{LifecycleState: aws.String("InService")},
 						{LifecycleState: aws.String("InService")},
 						{LifecycleState: aws.String("Pending")},
 					},
-					MaxSize:              aws.Int64(10),
-				}
+					MaxSize: aws.Int64(10),
+				},
 			},
 		},
 	}
@@ -71,21 +71,21 @@ func TestASGUsageCheck(t *testing.T) {
 	expectedUsage := []QuotaUsage{
 		{
 			Name:         numInstancesPerASGName,
-			ResourceName: "asg1",
+			ResourceName: aws.String("asg1"),
 			Description:  numInstancesPerASGDescription,
 			Usage:        float64(2),
 			Quota:        float64(7),
 		},
 		{
 			Name:         numInstancesPerASGName,
-			ResourceName: "asg2",
+			ResourceName: aws.String("asg2"),
 			Description:  numInstancesPerASGDescription,
 			Usage:        float64(0),
 			Quota:        float64(3),
 		},
 		{
 			Name:         numInstancesPerASGName,
-			ResourceName: "asg3",
+			ResourceName: aws.String("asg3"),
 			Description:  numInstancesPerASGDescription,
 			Usage:        float64(3),
 			Quota:        float64(10),
