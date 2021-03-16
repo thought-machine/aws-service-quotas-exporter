@@ -7,7 +7,4 @@ docker_image(
     ],
     dockerfile = "Dockerfile-aws-service-quotas-exporter",
     image = "aws-service-quotas-exporter",
-    visibility = [
-        "//k8s",
-    ],
 )
