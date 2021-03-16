@@ -1,6 +1,6 @@
 go_binary(
     name="aws-service-quotas-exporter",
-    srcs=["cmd/main.go"],
+    srcs=["main.go"],
     static=False,
     deps=[
         "//pkg/service_exporter:serviceexporter",
