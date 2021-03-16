@@ -277,6 +277,8 @@ func (c *RunningOnDemandStandardInstancesUsageCheck) Usage() ([]QuotaUsage, erro
 	return usage, nil
 }
 
+// AvailableIpsPerSubnetUsageCheck implements the UsageCheckInterface
+// for available IPs per subnet
 type AvailableIpsPerSubnetUsageCheck struct {
 	client ec2iface.EC2API
 }
