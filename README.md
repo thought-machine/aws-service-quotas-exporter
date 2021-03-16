@@ -7,7 +7,7 @@ support plan][3], required by the [AWS Support API][4] (AWS
 Trusted Advisor). This exporter also provides some metrics that are
 not available via the AWS Trusted Advisor, such as "rules per security
 group" and "spot instance requests". Other metrics exported through other AWS APIs
-can also be integrated with minimal effort, an example of such is "available IPs 
+can also be integrated with minimal effort, an example of such is "available IPs
 per subnet" as seen in //service_quotas/ec2_limits.go.
 
 # Metrics
@@ -81,7 +81,7 @@ Example IAM policy
 
 # Options
 
-`plz run //:aws-service-quotas-exporter -- [OPTIONS]`
+`plz run //cmd:aws-service-quotas-exporter -- [OPTIONS]`
 | Short Flag | Long Flag | Env var     | Description                    |
 |------------|-----------|-------------|--------------------------------|
 | -p         | --port    | N/A         | Port on which to serve metrics |
@@ -91,9 +91,9 @@ Example IAM policy
 # Building the exporter and running the exporter
 
 ## Building the binary with please
-`plz build //:aws-service-quotas-exporter`
+`plz build //cmd:aws-service-quotas-exporter`
 
-`plz run //:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile`
+`plz run //cmd:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile`
 
 ## Docker image
 `docker build -f Dockerfile-builder . --rm=false`
@@ -106,7 +106,7 @@ Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<
 
 Example
 `service_quotas/<service_name>_limits.go`
-``` 
+```
 const (
     myQuotaName        = "prometheus_valid_metric_name"  // Only [a-zA-Z0-9:_]
     myQuotaDescription = "my description"
@@ -145,7 +145,7 @@ func (c *MyUsageCheck) Usage() ([]QuotaUsage, error) {
 
 ### Add the check to the `newUsageChecks` and make sure to pass the appropriate AWS client
 
-If the check uses the Service Quotas API, then it needs to be added as part of 
+If the check uses the Service Quotas API, then it needs to be added as part of
 `serviceQuotasUsageChecks` with its service quota code (examples given in the
 [using AWS CLI to manage service quota requests page][5]). Otherwise, the check can
 just be added to `otherUsageChecks`.

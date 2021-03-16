@@ -10,7 +10,7 @@ jobs:
       - checkout
       - run:
           name: Build Docker Image
-          command: docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+          command: docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
   build_and_release:
     working_directory: ~/aws-service-quotas-exporter
     machine: true
@@ -21,9 +21,9 @@ jobs:
           command: |
             if [ -z ${CIRCLE_TAG+x} ]
             then
-                docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+                docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
             else
-                docker build -f Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
+                docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
             fi
       - run:
           name: Publish Docker Image to Docker Hub

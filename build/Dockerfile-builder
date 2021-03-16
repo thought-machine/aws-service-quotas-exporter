@@ -15,14 +15,14 @@ COPY . .
 
 RUN source ~/.profile && plz test //... --show_all_output
 
-RUN source ~/.profile && plz build //:aws-service-quotas-exporter --show_all_output
+RUN source ~/.profile && plz build //cmd:aws-service-quotas-exporter --show_all_output
 
 # alpine:3.10.3
 FROM alpine@sha256:c19173c5ada610a5989151111163d28a67368362762534d8a8121ce95cf2bd5a
 
 EXPOSE 9090
 
-COPY --from=builder /go/github.com/thought-machine/aws-service-quotas-exporter/plz-out/bin/aws-service-quotas-exporter /home/app/aws-service-quotas-exporter
+COPY --from=builder /go/github.com/thought-machine/aws-service-quotas-exporter/plz-out/bin/cmd/aws-service-quotas-exporter /home/app/aws-service-quotas-exporter
 
 # Max user
 RUN addgroup -g 255999 -S app && \
