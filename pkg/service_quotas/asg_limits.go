@@ -37,7 +37,7 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 
 					quotaUsage := QuotaUsage{
 						Name:         numInstancesPerASGName,
-						ResourceName: *asg.AutoScalingGroupName,
+						ResourceName: asg.AutoScalingGroupName,
 						Description:  numInstancesPerASGDescription,
 						Usage:        float64(numRunningInstances),
 						Quota:        float64(*asg.MaxSize),
