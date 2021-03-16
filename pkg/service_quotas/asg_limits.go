@@ -37,7 +37,7 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 
 					quotaUsage := QuotaUsage{
 						Name:         numInstancesPerASGName,
-						ResourceName: asg.AutoScalingGroupName,
+						ResourceName: *asg.AutoScalingGroupName,
 						Description:  numInstancesPerASGDescription,
 						Usage:        float64(numRunningInstances),
 						Quota:        float64(*asg.MaxSize),
@@ -56,9 +56,6 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 }
 
 func isRunning(instance *autoscaling.Instance) bool {
-	// Valid Values: Pending | Pending:Wait | Pending:Proceed | Quarantined | InService
-	// | Terminating | Terminating:Wait | Terminating:Proceed | Terminated | Detaching
-	// | Detached | EnteringStandby | Standby
 	notRunningStates := map[string]bool{
 		"Terminating":         true,
 		"Terminating:Wait":    true,
