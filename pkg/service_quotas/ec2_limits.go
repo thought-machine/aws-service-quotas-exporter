@@ -304,12 +304,12 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 						return true
 					}
 					maxNumOfIPs := math.Pow(2, 32-float64(blockedBits))
-					usage := (maxNumOfIPs - float64(*subnet.AvailableIpAddressCount)) / maxNumOfIPs
+					usage := float64(maxNumOfIPs - float64(*subnet.AvailableIpAddressCount))
 					availabilityInfo := QuotaUsage{
 						Name:         availableIPsPerSubnetName,
 						ResourceName: subnet.SubnetId,
 						Description:  availableIPsPerSubnetDesc,
-						Usage:        float64(usage),
+						Usage:        usage,
 						Quota:        float64(maxNumOfIPs),
 					}
 					availabilityInfos = append(availabilityInfos, availabilityInfo)
