@@ -12,7 +12,7 @@ per subnet" as seen in //service_quotas/ec2_limits.go.
 
 # Metrics
 
-There are 6 metrics exposed:
+There are 7 metrics exposed:
 
 1. Rules per security group
 ```
@@ -50,6 +50,12 @@ aws_available_ips_per_subnet_limit_total{region="eu-west-1",resource="arn:aws:ec
 aws_available_ips_per_subnet_used_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 0.0244140625
 ```
 
+7. VMs per AutoScalingGroup - useful to get alerts if the max number of instances for an ASG has been reached
+```
+aws_instances_per_asg_limit_total{region="eu-west-1",resource="asg"} 5
+aws_instances_per_asg_used_total{region="eu-west-1",resource="asg"} 10
+```
+
 # IAM Permissions
 
 The AWS Service Quotas requires permissions for the following actions
@@ -60,6 +66,7 @@ to be able to run:
  * `ec2:DescribeInstances`
  * `ec2:DescribeSubnets`
  * `servicequotas:ListServiceQuotas`
+ * `autoscaling:DescribeAutoScalingGroups`
 
 Example IAM policy
 ```
@@ -73,6 +80,7 @@ Example IAM policy
           "ec2:DescribeInstances",
           "ec2:DescribeSubnets",
           "servicequotas:ListServiceQuotas",
+          "autoscaling:DescribeAutoScalingGroups"
       ],
       "Resource": "*"
    }]

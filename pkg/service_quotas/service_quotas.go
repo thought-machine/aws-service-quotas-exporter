@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	awsservicequotas "github.com/aws/aws-sdk-go/service/servicequotas"
 	"github.com/aws/aws-sdk-go/service/servicequotas/servicequotasiface"
@@ -19,7 +20,9 @@ var (
 	ErrFailedToConvertCidr = errors.New("failed to convert CIDR block from string to int")
 )
 
-var services = []string{"ec2", "vpc"}
+func allServices() []string {
+	return []string{"ec2", "vpc"}
+}
 
 // UsageCheck is an interface for retrieving service quota usage
 type UsageCheck interface {
@@ -30,6 +33,7 @@ type UsageCheck interface {
 func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]UsageCheck, []UsageCheck) {
 	// all clients that will be used by the usage checks
 	ec2Client := ec2.New(c, cfgs...)
+	autoscalingClient := autoscaling.New(c, cfgs...)
 
 	serviceQuotasUsageChecks := map[string]UsageCheck{
 		"L-0EA8095F": &RulesPerSecurityGroupUsageCheck{ec2Client},
@@ -41,6 +45,7 @@ func newUsageChecks(c client.ConfigProvider, cfgs ...*aws.Config) (map[string]Us
 
 	otherUsageChecks := []UsageCheck{
 		&AvailableIpsPerSubnetUsageCheck{ec2Client},
+		&ASGUsageCheck{autoscalingClient},
 	}
 
 	return serviceQuotasUsageChecks, otherUsageChecks
@@ -169,7 +174,7 @@ func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
 // QuotasAndUsage returns a slice of `QuotaUsage` or an error
 func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 	allQuotaUsages := []QuotaUsage{}
-	for _, service := range services {
+	for _, service := range allServices() {
 		serviceQuotas, err := s.quotasForService(service)
 		if err != nil {
 			return nil, err
@@ -180,13 +185,13 @@ func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 		}
 	}
 
-	for _, availability := range s.otherUsageChecks {
-		serviceAvailabilities, err := availability.Usage()
+	for _, check := range s.otherUsageChecks {
+		quotas, err := check.Usage()
 		if err != nil {
 			return nil, err
 		}
 
-		for _, quota := range serviceAvailabilities {
+		for _, quota := range quotas {
 			allQuotaUsages = append(allQuotaUsages, quota)
 		}
 	}
