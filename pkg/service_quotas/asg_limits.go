@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	numInstancesPerASGName        = "instances_per_security_group"
-	numInstancesPerASGDescription = "instances per security group"
+	numInstancesPerASGName        = "instances_per_asg"
+	numInstancesPerASGDescription = "instances per ASG"
 )
 
 // ASGUsageCheck implements the UsageCheckInterface for VMs per
