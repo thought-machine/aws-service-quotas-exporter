@@ -12,7 +12,7 @@ jobs:
           name: Build Docker Image
           command: docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
   build_and_release:
-    working_directory: ~/aws-service-quotas-exporter
+    working_directory: ~/
     machine: true
     steps:
       - run:
@@ -27,6 +27,7 @@ jobs:
       - run:
           name: Build Docker Image
           command: |
+            pushd aws-service-quotas-exporter
             if [ -z ${CIRCLE_TAG+x} ]
             then
                 docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
