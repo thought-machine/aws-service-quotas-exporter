@@ -15,7 +15,15 @@ jobs:
     working_directory: ~/aws-service-quotas-exporter
     machine: true
     steps:
-      - checkout
+      - run:
+          name: Checkout code
+          command: |
+            if [ -z ${CIRCLE_TAG+x} ]
+            then
+                git clone --depth 1 "${CIRCLE_REPOSITORY_URL}"
+            else
+                git clone --branch "${CIRCLE_TAG}" --depth 1 "${CIRCLE_REPOSITORY_URL}"
+            fi
       - run:
           name: Build Docker Image
           command: |
