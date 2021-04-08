@@ -46,8 +46,8 @@ aws_ondemand_instance_requests_used_total{region="eu-west-1",resource="ondemand_
 
 6. Available IPs per subnet
 ```
-aws_available_ips_per_subnet_limit_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 4096
-aws_available_ips_per_subnet_used_total{region="eu-west-1",resource="arn:aws:ec2:eu-west-1:559584261179:subnet/subnet-do93c3jpg5oe4txjn"} 0.0244140625
+aws_available_ips_per_subnet_limit_total{region="eu-west-1",resource="subnet-do93c3jpg5oe4txjn"} 8192
+aws_available_ips_per_subnet_used_total{region="eu-west-1",resource="subnet-do93c3jpg5oe4txjn"} 7959
 ```
 
 7. VMs per AutoScalingGroup - useful to get alerts if the max number of instances for an ASG has been reached
@@ -104,7 +104,7 @@ Example IAM policy
 `plz run //cmd:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile`
 
 ## Docker image
-`docker build -f Dockerfile-builder . --rm=false`
+`docker build -f build/Dockerfile-builder . --rm=false`
 
 Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<version> See https://hub.docker.com/r/thoughtmachine/aws-service-quotas-exporter
 
