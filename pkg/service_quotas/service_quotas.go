@@ -10,6 +10,7 @@ import (
 	awsservicequotas "github.com/aws/aws-sdk-go/service/servicequotas"
 	"github.com/aws/aws-sdk-go/service/servicequotas/servicequotasiface"
 	"github.com/pkg/errors"
+	logging "github.com/sirupsen/logrus"
 )
 
 // Errors returned from this package
@@ -85,6 +86,7 @@ func (q QuotaUsage) Identifier() string {
 type ServiceQuotas struct {
 	session                  *session.Session
 	region                   string
+	isAwsChina               bool
 	quotasService            servicequotasiface.ServiceQuotasAPI
 	serviceQuotasUsageChecks map[string]UsageCheck
 	otherUsageChecks         []UsageCheck
@@ -100,7 +102,8 @@ type QuotasInterface interface {
 // or returns an error. Note that the ServiceQuotas will only return
 // usage and quotas for the service quotas with implemented usage checks
 func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
-	if !isValidRegion(region) {
+	validRegion, isChina := isValidRegion(region)
+	if !validRegion {
 		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas: %w")
 	}
 
@@ -117,20 +120,29 @@ func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
 	quotasService := awsservicequotas.New(awsSession, aws.NewConfig().WithRegion(region))
 	serviceQuotasChecks, otherChecks := newUsageChecks(awsSession, aws.NewConfig().WithRegion(region))
 
+	if isChina {
+		logging.Warn("AWS china currently doesn't support service quotas, disabling...")
+	}
+
 	quotas := &ServiceQuotas{
 		session:                  awsSession,
 		region:                   region,
 		quotasService:            quotasService,
 		serviceQuotasUsageChecks: serviceQuotasChecks,
+		isAwsChina:               isChina,
 		otherUsageChecks:         otherChecks,
 	}
 	return quotas, nil
 }
 
-func isValidRegion(region string) bool {
-	availableRegions := endpoints.AwsPartition().Regions()
-	_, ok := availableRegions[region]
-	return ok
+func isValidRegion(region string) (bool, bool) {
+	for _, partition := range endpoints.DefaultPartitions() {
+		_, ok := partition.Regions()[region]
+		if ok {
+			return true, partition.ID() == endpoints.AwsCnPartitionID
+		}
+	}
+	return false, false
 }
 
 func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
@@ -174,14 +186,17 @@ func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
 // QuotasAndUsage returns a slice of `QuotaUsage` or an error
 func (s *ServiceQuotas) QuotasAndUsage() ([]QuotaUsage, error) {
 	allQuotaUsages := []QuotaUsage{}
-	for _, service := range allServices() {
-		serviceQuotas, err := s.quotasForService(service)
-		if err != nil {
-			return nil, err
-		}
 
-		for _, quota := range serviceQuotas {
-			allQuotaUsages = append(allQuotaUsages, quota)
+	if !s.isAwsChina {
+		for _, service := range allServices() {
+			serviceQuotas, err := s.quotasForService(service)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, quota := range serviceQuotas {
+				allQuotaUsages = append(allQuotaUsages, quota)
+			}
 		}
 	}
 
