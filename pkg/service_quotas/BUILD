@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//third_party/go:aws-sdk-go",
         "//third_party/go:errors",
+        "//third_party/go:logrus"
     ],
 )
 

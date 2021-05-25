@@ -16,9 +16,12 @@ type mockServiceQuotasClient struct {
 	err                       error
 	serviceName               string
 	ListServiceQuotasResponse *awsservicequotas.ListServiceQuotasOutput
+	timesCalled               int
 }
 
 func (m *mockServiceQuotasClient) ListServiceQuotasPages(input *awsservicequotas.ListServiceQuotasInput, fn func(*awsservicequotas.ListServiceQuotasOutput, bool) bool) error {
+	m.timesCalled++
+
 	if *input.ServiceCode == m.serviceName {
 		fn(m.ListServiceQuotasResponse, true)
 	} else {
@@ -160,7 +163,84 @@ func TestQuotasAndUsage(t *testing.T) {
 		},
 	}
 
+	expectedServiceQuotasAPICalls := 2
+
 	assert.NoError(t, err)
+	assert.Equal(t, expectedServiceQuotasAPICalls, mockClient.timesCalled)
+	assert.Equal(t, expectedQuotasAndUsage, actualQuotasAndUsage)
+}
+
+func TestQuotasAndUsageChina(t *testing.T) {
+
+	// This won't be called as aws china doesn't support service quotas currently.
+	mockClientNotUsed := &mockServiceQuotasClient{
+		serviceName: "ec2",
+		ListServiceQuotasResponse: &awsservicequotas.ListServiceQuotasOutput{
+			Quotas: []*awsservicequotas.ServiceQuota{
+				{
+					QuotaCode: aws.String("L-1234"),
+					Value:     aws.Float64(15),
+				},
+			},
+		},
+	}
+
+	firstUsageCheckMockNotUsed := &UsageCheckMock{
+		usages: []QuotaUsage{
+			{
+				Name:         "check_with_multiple_resources",
+				ResourceName: aws.String("i-resource1"),
+				Description:  "check with multiple resources",
+				Usage:        10,
+			},
+		},
+	}
+	secondUsageCheckMockNotUsed := &UsageCheckMock{
+		usages: []QuotaUsage{
+			{
+				Name:        "some_check",
+				Description: "some check",
+				Usage:       1,
+			},
+		},
+	}
+
+	serviceQuotas := ServiceQuotas{
+		quotasService: mockClientNotUsed,
+		isAwsChina:    true,
+		serviceQuotasUsageChecks: map[string]UsageCheck{
+			"L-1234": firstUsageCheckMockNotUsed,
+			"L-5678": secondUsageCheckMockNotUsed,
+		},
+		otherUsageChecks: []UsageCheck{
+			&UsageCheckMock{
+				usages: []QuotaUsage{
+					{
+						Name:        "some_check",
+						Description: "some check",
+						Usage:       1,
+						Quota:       2,
+					},
+				},
+			},
+		},
+	}
+	actualQuotasAndUsage, err := serviceQuotas.QuotasAndUsage()
+
+	// Service quotas are currently not supported in AWS china
+	expectedQuotasAndUsage := []QuotaUsage{
+		{
+			Name:        "some_check",
+			Description: "some check",
+			Usage:       1,
+			Quota:       2,
+		},
+	}
+
+	expectedServiceQuotasAPICalls := 0
+
+	assert.NoError(t, err)
+	assert.Equal(t, expectedServiceQuotasAPICalls, mockClientNotUsed.timesCalled)
 	assert.Equal(t, expectedQuotasAndUsage, actualQuotasAndUsage)
 }
 
