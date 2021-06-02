@@ -86,17 +86,19 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 	secondUsageDesc := newDesc(region, secondQ.Name, "used_total", "Used amount of desc2", []string{"resource"})
 	secondLimitDesc := newDesc(region, secondQ.Name, "limit_total", "Limit of desc2", []string{"resource"})
 	expectedMetrics := map[string]Metric{
-		"i-asdasd1": Metric{
-			usageDesc: firstUsageDesc,
-			limitDesc: firstLimitDesc,
-			usage:     5,
-			limit:     10,
+		"Name1i-asdasd1": Metric{
+			resourceID: "i-asdasd1",
+			usageDesc:  firstUsageDesc,
+			limitDesc:  firstLimitDesc,
+			usage:      5,
+			limit:      10,
 		},
-		"i-asdasd2": Metric{
-			usageDesc: secondUsageDesc,
-			limitDesc: secondLimitDesc,
-			usage:     1,
-			limit:     8,
+		"Name2i-asdasd2": Metric{
+			resourceID: "i-asdasd2",
+			usageDesc:  secondUsageDesc,
+			limitDesc:  secondLimitDesc,
+			usage:      1,
+			limit:      8,
 		},
 	}
 

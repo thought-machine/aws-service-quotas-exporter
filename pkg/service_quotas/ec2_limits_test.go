@@ -69,28 +69,63 @@ func TestRulesPerSecurityGroupUsage(t *testing.T) {
 						{
 							FromPort: aws.Int64(0),
 							ToPort:   aws.Int64(0),
+							UserIdGroupPairs: []*ec2.UserIdGroupPair{
+								{
+									Description: aws.String("Allow workers to communicate with the control plane."),
+									GroupId:     aws.String("sg-0afb91d177e53ae1d"),
+									UserId:      aws.String("740679791268"),
+								},
+							},
+							IpRanges: []*ec2.IpRange{
+								{
+									CidrIp:      aws.String("10.0.0.10/32"),
+									Description: aws.String("Rule A"),
+								},
+								{
+									CidrIp:      aws.String("10.0.0.5/32"),
+									Description: aws.String("Rule B"),
+								},
+							},
 						},
 					},
 					IpPermissionsEgress: []*ec2.IpPermission{
 						{
 							FromPort: aws.Int64(0),
 							ToPort:   aws.Int64(0),
+							IpRanges: []*ec2.IpRange{
+								{
+									CidrIp:      aws.String("0.0.0.0/0"),
+									Description: aws.String("Rule A"),
+								},
+							},
 						},
 					},
 				},
 			},
 			expectedUsage: []QuotaUsage{
 				{
-					Name:         rulesPerSecGrpName,
+					Name:         inboundRulesPerSecGrpName,
 					ResourceName: aws.String("somegroupid"),
-					Description:  rulesPerSecGrpDesc,
+					Description:  inboundRulesPerSecGrpDesc,
 					Usage:        0,
 				},
 				{
-					Name:         rulesPerSecGrpName,
+					Name:         outboundRulesPerSecGrpName,
+					ResourceName: aws.String("somegroupid"),
+					Description:  outboundRulesPerSecGrpDesc,
+					Usage:        0,
+				},
+				{
+					Name:         inboundRulesPerSecGrpName,
 					ResourceName: aws.String("groupwithrules"),
-					Description:  rulesPerSecGrpDesc,
-					Usage:        2,
+					Description:  inboundRulesPerSecGrpDesc,
+					Usage:        3,
+				},
+				{
+					Name:         outboundRulesPerSecGrpName,
+					ResourceName: aws.String("groupwithrules"),
+					Description:  outboundRulesPerSecGrpDesc,
+					Usage:        1,
 				},
 			},
 		},
