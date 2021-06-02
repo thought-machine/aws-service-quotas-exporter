@@ -16,8 +16,10 @@ There are 7 metrics exposed:
 
 1. Rules per security group
 ```
-aws_rules_per_security_group_limit_total{region="eu-west-1",resource="sg-000000000000"} 60
-aws_rules_per_security_group_used_total{region="eu-west-1",resource="sg-000000000000"} 3
+aws_inbound_rules_per_security_group_limit_total{region="eu-west-1",resource="sg-0000000000000"} 200
+aws_inbound_rules_per_security_group_used_total{region="eu-west-1",resource="sg-0000000000000"} 198
+aws_outbound_rules_per_security_group_limit_total{region="eu-west-1",resource="sg-00000000000000"} 200
+aws_outbound_rules_per_security_group_used_total{region="eu-west-1",resource="sg-00000000000000"} 7
 ```
 
 2. Security groups per network interface
