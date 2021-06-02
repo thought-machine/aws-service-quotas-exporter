@@ -13,8 +13,11 @@ import (
 // Not all quota limits here are reported under "ec2", but all of the
 // usage checks are using the ec2 service
 const (
-	rulesPerSecGrpName = "rules_per_security_group"
-	rulesPerSecGrpDesc = "rules per security group"
+	inboundRulesPerSecGrpName = "inbound_rules_per_security_group"
+	inboundRulesPerSecGrpDesc = "inbound rules per security group"
+
+	outboundRulesPerSecGrpName = "outbound_rules_per_security_group"
+	outboundRulesPerSecGrpDesc = "outbound rules per security group"
 
 	secGroupsPerENIName = "security_groups_per_network_interface"
 	secGroupsPerENIDesc = "security groups per network interface"
@@ -43,13 +46,39 @@ type RulesPerSecurityGroupUsageCheck struct {
 func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 	quotaUsages := []QuotaUsage{}
 
-	securityGroups := []*ec2.SecurityGroup{}
 	params := &ec2.DescribeSecurityGroupsInput{}
 	err := c.client.DescribeSecurityGroupsPages(params,
 		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
 			if page != nil {
 				for _, group := range page.SecurityGroups {
-					securityGroups = append(securityGroups, group)
+					var inboundRules int = 0
+					var outboundRules int = 0
+
+					for _, rule := range group.IpPermissions {
+						inboundRules += len(rule.IpRanges)
+						inboundRules += len(rule.UserIdGroupPairs)
+					}
+
+					inboundUsage := QuotaUsage{
+						Name:         inboundRulesPerSecGrpName,
+						ResourceName: group.GroupId,
+						Description:  inboundRulesPerSecGrpDesc,
+						Usage:        float64(inboundRules),
+					}
+
+					for _, rule := range group.IpPermissionsEgress {
+						outboundRules += len(rule.IpRanges)
+						inboundRules += len(rule.UserIdGroupPairs)
+					}
+
+					outboundUsage := QuotaUsage{
+						Name:         outboundRulesPerSecGrpName,
+						ResourceName: group.GroupId,
+						Description:  outboundRulesPerSecGrpDesc,
+						Usage:        float64(outboundRules),
+					}
+
+					quotaUsages = append(quotaUsages, []QuotaUsage{inboundUsage, outboundUsage}...)
 				}
 			}
 			return !lastPage
@@ -57,18 +86,6 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 	)
 	if err != nil {
 		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
-	}
-
-	for _, securityGroup := range securityGroups {
-		inboundRules := len(securityGroup.IpPermissions)
-		outboundRules := len(securityGroup.IpPermissionsEgress)
-		quotaUsage := QuotaUsage{
-			Name:         rulesPerSecGrpName,
-			ResourceName: securityGroup.GroupId,
-			Description:  rulesPerSecGrpDesc,
-			Usage:        float64(inboundRules + outboundRules),
-		}
-		quotaUsages = append(quotaUsages, quotaUsage)
 	}
 
 	return quotaUsages, nil
