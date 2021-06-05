@@ -41,6 +41,7 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 						Description:  numInstancesPerASGDescription,
 						Usage:        float64(numRunningInstances),
 						Quota:        float64(*asg.MaxSize),
+						Tags:         autoscalingTagsToQuotaUsageTags(asg.Tags),
 					}
 					quotaUsages = append(quotaUsages, quotaUsage)
 				}
@@ -67,4 +68,18 @@ func isRunning(instance *autoscaling.Instance) bool {
 
 	_, isNotRunning := notRunningStates[*instance.LifecycleState]
 	return !isNotRunning
+}
+
+func autoscalingTagsToQuotaUsageTags(tags []*autoscaling.TagDescription) map[string]string {
+	length := len(tags)
+	if length == 0 {
+		return nil
+	}
+
+	out := make(map[string]string, length)
+	for _, tag := range tags {
+		out[ToPrometheusNamingFormat(*tag.Key)] = *tag.Value
+	}
+
+	return out
 }
