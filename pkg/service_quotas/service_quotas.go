@@ -70,6 +70,9 @@ type QuotaUsage struct {
 	Usage float64
 	// Quota is the current quota
 	Quota float64
+
+	// Tags are the metadata associated with the resource in form of key, value pairs
+	Tags map[string]string
 }
 
 // Identifier for the service quota. Either the resource name in case
@@ -104,7 +107,7 @@ type QuotasInterface interface {
 func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
 	validRegion, isChina := isValidRegion(region)
 	if !validRegion {
-		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas: %w")
+		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas")
 	}
 
 	opts := session.Options{}

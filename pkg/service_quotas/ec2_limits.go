@@ -54,6 +54,8 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 					var inboundRules int = 0
 					var outboundRules int = 0
 
+					tags := ec2TagsToQuotaUsageTags(group.Tags)
+
 					for _, rule := range group.IpPermissions {
 						inboundRules += len(rule.IpRanges)
 						inboundRules += len(rule.UserIdGroupPairs)
@@ -64,6 +66,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 						ResourceName: group.GroupId,
 						Description:  inboundRulesPerSecGrpDesc,
 						Usage:        float64(inboundRules),
+						Tags: tags,
 					}
 
 					for _, rule := range group.IpPermissionsEgress {
@@ -76,6 +79,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 						ResourceName: group.GroupId,
 						Description:  outboundRulesPerSecGrpDesc,
 						Usage:        float64(outboundRules),
+						Tags: tags,
 					}
 
 					quotaUsages = append(quotaUsages, []QuotaUsage{inboundUsage, outboundUsage}...)
@@ -113,6 +117,7 @@ func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 						ResourceName: eni.NetworkInterfaceId,
 						Description:  secGroupsPerENIDesc,
 						Usage:        float64(len(eni.Groups)),
+						Tags:         ec2TagsToQuotaUsageTags(eni.TagSet),
 					}
 					quotaUsages = append(quotaUsages, usage)
 				}
@@ -330,6 +335,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 						Description:  availableIPsPerSubnetDesc,
 						Usage:        usage,
 						Quota:        float64(maxNumOfIPs),
+						Tags:         ec2TagsToQuotaUsageTags(subnet.Tags),
 					}
 					availabilityInfos = append(availabilityInfos, availabilityInfo)
 				}
@@ -346,4 +352,18 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 	}
 
 	return availabilityInfos, nil
+}
+
+func ec2TagsToQuotaUsageTags(tags []*ec2.Tag) map[string]string {
+	length := len(tags)
+	if length == 0 {
+		return nil
+	}
+
+	out := make(map[string]string, length)
+	for _, tag := range tags {
+		out[ToPrometheusNamingFormat(*tag.Key)] = *tag.Value
+	}
+
+	return out
 }

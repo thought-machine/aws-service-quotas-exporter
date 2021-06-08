@@ -92,18 +92,19 @@ Example IAM policy
 # Options
 
 `plz run //cmd:aws-service-quotas-exporter -- [OPTIONS]`
-| Short Flag | Long Flag | Env var     | Description                    |
-|------------|-----------|-------------|--------------------------------|
-| -p         | --port    | N/A         | Port on which to serve metrics |
-| -r         | --region  | AWS_REGION  | AWS region                     |
-| -f         | --profile | AWS_PROFILE | Named AWS profile              |
+| Short Flag | Long Flag          | Env var                       | Description                                              |
+|------------|--------------------|----------------------|-------------------------------------------------------------------|
+| -p         | --port             | N/A         | Port on which to serve metrics                                             |
+| -r         | --region           | AWS_REGION  | AWS region                                                                 |
+| -f         | --profile          | AWS_PROFILE | Named AWS profile                                                          |
+| N/A        | --include-aws-tag  | N/A         | The aws resource tags to include as labels for returned metrics            |
 
 # Building the exporter and running the exporter
 
 ## Building the binary with please
 `plz build //cmd:aws-service-quotas-exporter`
 
-`plz run //cmd:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile`
+`plz run //cmd:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile --include-aws-tag 'tag1' --include-aws-tag 'tag2'`
 
 ## Docker image
 `docker build -f build/Dockerfile-builder . --rm=false`

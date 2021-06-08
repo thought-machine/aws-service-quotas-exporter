@@ -14,11 +14,11 @@ var log = logging.WithFields(logging.Fields{})
 
 // Metric holds usage and limit desc and values
 type Metric struct {
-	resourceID string
-	usageDesc  *prometheus.Desc
-	limitDesc  *prometheus.Desc
-	usage      float64
-	limit      float64
+	usageDesc   *prometheus.Desc
+	limitDesc   *prometheus.Desc
+	usage       float64
+	limit       float64
+	labelValues []string
 }
 
 func metricKey(quota servicequotas.QuotaUsage) string {
@@ -28,15 +28,16 @@ func metricKey(quota servicequotas.QuotaUsage) string {
 // ServiceQuotasExporter AWS service quotas and usage prometheus
 // exporter
 type ServiceQuotasExporter struct {
-	metricsRegion  string
-	quotasClient   servicequotas.QuotasInterface
-	metrics        map[string]Metric
-	refreshPeriod  int
-	waitForMetrics chan struct{}
+	metricsRegion   string
+	quotasClient    servicequotas.QuotasInterface
+	metrics         map[string]Metric
+	refreshPeriod   int
+	waitForMetrics  chan struct{}
+	includedAWSTags []string
 }
 
 // NewServiceQuotasExporter creates a new ServiceQuotasExporter
-func NewServiceQuotasExporter(region, profile string, refreshPeriod int) (*ServiceQuotasExporter, error) {
+func NewServiceQuotasExporter(region, profile string, refreshPeriod int, includedAWSTags []string) (*ServiceQuotasExporter, error) {
 	quotasClient, err := servicequotas.NewServiceQuotas(region, profile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%w")
@@ -44,13 +45,14 @@ func NewServiceQuotasExporter(region, profile string, refreshPeriod int) (*Servi
 
 	ch := make(chan struct{})
 	exporter := &ServiceQuotasExporter{
-		metricsRegion:  region,
-		quotasClient:   quotasClient,
-		metrics:        map[string]Metric{},
-		refreshPeriod:  refreshPeriod,
-		waitForMetrics: ch,
+		metricsRegion:   region,
+		quotasClient:    quotasClient,
+		metrics:         map[string]Metric{},
+		refreshPeriod:   refreshPeriod,
+		waitForMetrics:  ch,
+		includedAWSTags: includedAWSTags,
 	}
-	go exporter.createQuotasAndDescriptions()
+	go exporter.createQuotasAndDescriptions(false)
 	go exporter.refreshMetrics()
 
 	return exporter, nil
@@ -66,6 +68,10 @@ func (e *ServiceQuotasExporter) refreshMetrics() {
 }
 
 func (e *ServiceQuotasExporter) updateMetrics() {
+	e.createQuotasAndDescriptions(true)
+}
+
+func (e *ServiceQuotasExporter) createQuotasAndDescriptions(refresh bool) {
 	quotas, err := e.quotasClient.QuotasAndUsage()
 	if err != nil {
 		log.Fatalf("Could not retrieve quotas and limits: %s", err)
@@ -73,45 +79,46 @@ func (e *ServiceQuotasExporter) updateMetrics() {
 
 	for _, quota := range quotas {
 		key := metricKey(quota)
-		log.Infof("Refreshing metrics for resource (%s)", quota.Identifier())
-		if resourceMetric, ok := e.metrics[key]; ok {
-			resourceMetric.usage = quota.Usage
-			resourceMetric.limit = quota.Quota
+		resourceID := quota.Identifier()
+
+		labels := []string{"resource"}
+		labelValues := []string{resourceID}
+
+		for _, tag := range e.includedAWSTags {
+			prometheusFormatTag := servicequotas.ToPrometheusNamingFormat(tag)
+			labels = append(labels, prometheusFormatTag)
+			// Need to set empty label value to keep label name and value count the same
+			labelValues = append(labelValues, quota.Tags[prometheusFormatTag])
+		}
+
+		if refresh {
+			if resourceMetric, ok := e.metrics[key]; ok {
+				log.Infof("Refreshing metrics for resource (%s)", resourceID)
+				resourceMetric.usage = quota.Usage
+				resourceMetric.limit = quota.Quota
+				resourceMetric.labelValues = labelValues
+				e.metrics[key] = resourceMetric
+			}
+		} else {
+			usageHelp := fmt.Sprintf("Used amount of %s", quota.Description)
+			usageDesc := newDesc(e.metricsRegion, quota.Name, "used_total", usageHelp, labels)
+
+			limitHelp := fmt.Sprintf("Limit of %s", quota.Description)
+			limitDesc := newDesc(e.metricsRegion, quota.Name, "limit_total", limitHelp, labels)
+			resourceMetric := Metric{
+				usageDesc:   usageDesc,
+				limitDesc:   limitDesc,
+				usage:       quota.Usage,
+				limit:       quota.Quota,
+				labelValues: labelValues,
+			}
 			e.metrics[key] = resourceMetric
 		}
 	}
-}
 
-func (e *ServiceQuotasExporter) createQuotasAndDescriptions() {
-	quotas, err := e.quotasClient.QuotasAndUsage()
-	if err != nil {
-		log.Fatalf("Could not retrieve quotas and limits: %s", err)
+	if !refresh {
+		close(e.waitForMetrics)
 	}
-
-	for _, quota := range quotas {
-		// check so we don't report the same metric more than once
-		key := metricKey(quota)
-		if _, ok := e.metrics[key]; ok {
-			continue
-		}
-
-		usageHelp := fmt.Sprintf("Used amount of %s", quota.Description)
-		usageDesc := newDesc(e.metricsRegion, quota.Name, "used_total", usageHelp, []string{"resource"})
-
-		limitHelp := fmt.Sprintf("Limit of %s", quota.Description)
-		limitDesc := newDesc(e.metricsRegion, quota.Name, "limit_total", limitHelp, []string{"resource"})
-
-		resourceMetric := Metric{
-			resourceID: quota.Identifier(),
-			usageDesc:  usageDesc,
-			limitDesc:  limitDesc,
-			usage:      quota.Usage,
-			limit:      quota.Quota,
-		}
-		e.metrics[key] = resourceMetric
-	}
-
-	close(e.waitForMetrics)
 }
 
 // Describe writes descriptors to the prometheus desc channel
@@ -127,8 +134,8 @@ func (e *ServiceQuotasExporter) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements the collect function for prometheus collectors
 func (e *ServiceQuotasExporter) Collect(ch chan<- prometheus.Metric) {
 	for _, metric := range e.metrics {
-		ch <- prometheus.MustNewConstMetric(metric.limitDesc, prometheus.GaugeValue, metric.limit, metric.resourceID)
-		ch <- prometheus.MustNewConstMetric(metric.usageDesc, prometheus.GaugeValue, metric.usage, metric.resourceID)
+		ch <- prometheus.MustNewConstMetric(metric.limitDesc, prometheus.GaugeValue, metric.limit, metric.labelValues...)
+		ch <- prometheus.MustNewConstMetric(metric.usageDesc, prometheus.GaugeValue, metric.usage, metric.labelValues...)
 	}
 }
 
