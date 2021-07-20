@@ -31,7 +31,7 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 					numRunningInstances := 0
 					for _, instance := range asg.Instances {
 						if isRunning(instance) {
-							numRunningInstances += 1
+							numRunningInstances++
 						}
 					}
 
