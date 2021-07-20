@@ -51,8 +51,8 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 		func(page *ec2.DescribeSecurityGroupsOutput, lastPage bool) bool {
 			if page != nil {
 				for _, group := range page.SecurityGroups {
-					var inboundRules int = 0
-					var outboundRules int = 0
+					var inboundRules int
+					var outboundRules int
 
 					tags := ec2TagsToQuotaUsageTags(group.Tags)
 
@@ -66,7 +66,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 						ResourceName: group.GroupId,
 						Description:  inboundRulesPerSecGrpDesc,
 						Usage:        float64(inboundRules),
-						Tags: tags,
+						Tags:         tags,
 					}
 
 					for _, rule := range group.IpPermissionsEgress {
@@ -79,7 +79,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 						ResourceName: group.GroupId,
 						Description:  outboundRulesPerSecGrpDesc,
 						Usage:        float64(outboundRules),
-						Tags: tags,
+						Tags:         tags,
 					}
 
 					quotaUsages = append(quotaUsages, []QuotaUsage{inboundUsage, outboundUsage}...)

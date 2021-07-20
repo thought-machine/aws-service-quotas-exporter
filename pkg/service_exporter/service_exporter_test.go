@@ -41,7 +41,7 @@ func TestUpdateMetrics(t *testing.T) {
 		refreshPeriod:   360,
 	}
 
-	exporter.updateMetrics()
+	exporter.createOrUpdateQuotasAndDescriptions(true)
 
 	expectedMetrics := map[string]Metric{
 		"i-asdasd1": Metric{usage: 5, limit: 10, labelValues: []string{"i-asdasd1", "dummy-value"}},
@@ -82,7 +82,7 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 		includedAWSTags: []string{"dummy-tag", "dummy-tag2"},
 	}
 
-	exporter.createQuotasAndDescriptions(false)
+	exporter.createOrUpdateQuotasAndDescriptions(false)
 
 	firstUsageDesc := newDesc(region, firstQ.Name, "used_total", "Used amount of desc1", []string{"resource", "dummy_tag", "dummy_tag2"})
 	firstLimitDesc := newDesc(region, firstQ.Name, "limit_total", "Limit of desc1", []string{"resource", "dummy_tag", "dummy_tag2"})
@@ -135,7 +135,7 @@ func TestCreateQuotasAndDescriptionsRefresh(t *testing.T) {
 		refreshPeriod:   360,
 	}
 
-	exporter.updateMetrics()
+	exporter.createOrUpdateQuotasAndDescriptions(true)
 
 	expectedMetrics := map[string]Metric{
 		"i-asdasd1": Metric{usage: 5, limit: 10, labelValues: []string{"i-asdasd1", "dummy-value"}, usageDesc: desc},

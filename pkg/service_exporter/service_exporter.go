@@ -52,7 +52,7 @@ func NewServiceQuotasExporter(region, profile string, refreshPeriod int, include
 		waitForMetrics:  ch,
 		includedAWSTags: includedAWSTags,
 	}
-	go exporter.createQuotasAndDescriptions(false)
+	go exporter.createOrUpdateQuotasAndDescriptions(false)
 	go exporter.refreshMetrics()
 
 	return exporter, nil
@@ -63,15 +63,11 @@ func (e *ServiceQuotasExporter) refreshMetrics() {
 
 	for {
 		time.Sleep(time.Duration(e.refreshPeriod) * time.Second)
-		e.updateMetrics()
+		e.createOrUpdateQuotasAndDescriptions(true)
 	}
 }
 
-func (e *ServiceQuotasExporter) updateMetrics() {
-	e.createQuotasAndDescriptions(true)
-}
-
-func (e *ServiceQuotasExporter) createQuotasAndDescriptions(refresh bool) {
+func (e *ServiceQuotasExporter) createOrUpdateQuotasAndDescriptions(update bool) {
 	quotas, err := e.quotasClient.QuotasAndUsage()
 	if err != nil {
 		log.Fatalf("Could not retrieve quotas and limits: %s", err)
@@ -91,9 +87,9 @@ func (e *ServiceQuotasExporter) createQuotasAndDescriptions(refresh bool) {
 			labelValues = append(labelValues, quota.Tags[prometheusFormatTag])
 		}
 
-		if refresh {
+		if update {
 			if resourceMetric, ok := e.metrics[key]; ok {
-				log.Infof("Refreshing metrics for resource (%s)", resourceID)
+				log.Infof("Updating metrics for resource (%s)", resourceID)
 				resourceMetric.usage = quota.Usage
 				resourceMetric.limit = quota.Quota
 				resourceMetric.labelValues = labelValues
@@ -116,7 +112,7 @@ func (e *ServiceQuotasExporter) createQuotasAndDescriptions(refresh bool) {
 		}
 	}
 
-	if !refresh {
+	if !update {
 		close(e.waitForMetrics)
 	}
 }
