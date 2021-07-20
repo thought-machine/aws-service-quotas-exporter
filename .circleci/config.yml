@@ -3,6 +3,22 @@
 # Check https://circleci.com/docs/2.0/ for more details
 version: 2
 jobs:
+  test:
+    docker:
+      - image: circleci/golang:1.14
+    working_directory: ~/aws-service-quotas-exporter
+    steps:
+      - checkout
+      - run: go get -u golang.org/x/lint/golint
+      - run:
+          name: "Lint"
+          command: plz run parallel --include=lint
+      - run:
+          name: "gofmt check"
+          command: plz run parallel --include=gofmt
+      - run:
+          name: "Test"
+          command: plz test ./...
   build_and_test:
     working_directory: ~/aws-service-quotas-exporter
     machine: true
@@ -64,7 +80,4 @@ workflows:
               ignore: /.*/
   test-buildable:
     jobs:
-      - build_and_test:
-          filters:
-            branches:
-              ignore: master
+      - test
