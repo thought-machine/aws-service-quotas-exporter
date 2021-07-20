@@ -9,6 +9,7 @@ jobs:
     working_directory: /go/github.com/thought-machine/aws-service-quotas-exporter
     steps:
       - checkout
+      - run: sudo ln -s /usr/local/go/bin/go /usr/local/bin/go
       - run: curl https://get.please.build | sh
       - run: go get -u golang.org/x/lint/golint
       - run:
@@ -19,7 +20,7 @@ jobs:
           command: source ~/.profile && plz run parallel --include=gofmt --show_all_output
       - run:
           name: "Test"
-          command: source ~/.profile && (export PATH=$PATH:/usr/local/go/bin; plz test ./... --show_all_output)
+          command: source ~/.profile && plz test ./... --show_all_output
   build_and_test:
     working_directory: ~/aws-service-quotas-exporter
     machine: true
