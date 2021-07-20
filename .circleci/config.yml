@@ -9,7 +9,6 @@ jobs:
     working_directory: /go/github.com/thought-machine/aws-service-quotas-exporter
     steps:
       - checkout
-      - run: ln -s /usr/local/go/bin/go /usr/local/bin/go
       - run: curl https://get.please.build | sh
       - run: go get -u golang.org/x/lint/golint
       - run:
