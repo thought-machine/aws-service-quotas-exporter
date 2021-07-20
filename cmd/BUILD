@@ -9,3 +9,17 @@ go_binary(
         "//third_party/go:go-flags",
     ],
 )
+
+sh_cmd(
+    name = "lint",
+    cmd = "golint -set_exit_status $SRCS",
+    srcs = glob(["*.go"]),
+    labels = ["lint"]
+)
+
+sh_cmd(
+        name = "gofmt",
+        cmd = "[ -z \"$(gofmt -l $SRCS)\" ] && exit 0 || exit 1",
+        srcs = glob(["*.go"]),
+        labels = ["gofmt"],
+)
