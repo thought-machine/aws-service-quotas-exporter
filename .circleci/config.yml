@@ -13,13 +13,13 @@ jobs:
       - run: go get -u golang.org/x/lint/golint
       - run:
           name: "Lint"
-          command: plz run parallel --include=lint --show_all_output
+          command: source ~/.profile && plz run parallel --include=lint --show_all_output
       - run:
           name: "gofmt check"
-          command: plz run parallel --include=gofmt --show_all_output
+          command: source ~/.profile && plz run parallel --include=gofmt --show_all_output
       - run:
           name: "Test"
-          command: plz test ./... --show_all_output
+          command: source ~/.profile && plz test ./... --show_all_output
   build_and_test:
     working_directory: ~/aws-service-quotas-exporter
     machine: true
