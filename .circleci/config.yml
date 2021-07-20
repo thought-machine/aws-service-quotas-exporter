@@ -6,9 +6,10 @@ jobs:
   test:
     docker:
       - image: circleci/golang:1.14
-    working_directory: ~/aws-service-quotas-exporter
+    working_directory: /go/github.com/thought-machine/aws-service-quotas-exporter
     steps:
       - checkout
+      - run: ln -s /usr/local/go/bin/go /usr/local/bin/go
       - run: curl https://get.please.build | sh
       - run: go get -u golang.org/x/lint/golint
       - run:
