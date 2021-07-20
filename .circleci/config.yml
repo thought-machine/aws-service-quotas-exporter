@@ -21,14 +21,6 @@ jobs:
       - run:
           name: "Test"
           command: source ~/.profile && plz test ./... --show_all_output
-  build_and_test:
-    working_directory: ~/aws-service-quotas-exporter
-    machine: true
-    steps:
-      - checkout
-      - run:
-          name: Build Docker Image
-          command: docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
   build_and_release:
     working_directory: ~/
     machine: true
