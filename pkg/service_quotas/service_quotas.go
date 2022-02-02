@@ -176,7 +176,7 @@ func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToListQuotas, "%w", err)
+		return nil, errors.Wrapf(ErrFailedToListQuotas, "%v", err)
 	}
 
 	if usageErr != nil {
