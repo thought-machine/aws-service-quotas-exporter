@@ -37,6 +37,7 @@ func TestUpdateMetrics(t *testing.T) {
 			"i-asdasd1": Metric{usage: 3, limit: 5, labelValues: []string{"before-dummy-value"}},
 			"i-asdasd2": Metric{usage: 2, limit: 2},
 		},
+		metricsLock:     &sync.Mutex,
 		includedAWSTags: []string{"dummy-tag"},
 		refreshPeriod:   360,
 	}
@@ -47,6 +48,8 @@ func TestUpdateMetrics(t *testing.T) {
 		"i-asdasd1": Metric{usage: 5, limit: 10, labelValues: []string{"i-asdasd1", "dummy-value"}},
 		"i-asdasd2": Metric{usage: 2, limit: 3, labelValues: []string{"i-asdasd2", ""}},
 	}
+	exporter.metricsLock.Lock()
+	defer exporter.metricsLock.Unlock()
 	assert.Equal(t, expectedMetrics, exporter.metrics)
 }
 
@@ -77,6 +80,7 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 		metricsRegion:   region,
 		quotasClient:    quotasClient,
 		metrics:         map[string]Metric{},
+		metricsLock:     &sync.Mutex,
 		refreshPeriod:   360,
 		waitForMetrics:  ch,
 		includedAWSTags: []string{"dummy-tag", "dummy-tag2"},
@@ -105,6 +109,8 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 		},
 	}
 
+	exporter.metricsLock.Lock()
+	defer exporter.metricsLock.Unlock()
 	assert.Equal(t, expectedMetrics, exporter.metrics)
 }
 
@@ -130,6 +136,7 @@ func TestCreateQuotasAndDescriptionsRefresh(t *testing.T) {
 		metrics: map[string]Metric{
 			"i-asdasd1": Metric{usage: 3, limit: 5, labelValues: []string{"before-dummy-value"}, usageDesc: desc},
 		},
+		metricsLock:     &sync.Mutex,
 		waitForMetrics:  ch,
 		includedAWSTags: []string{"dummy-tag"},
 		refreshPeriod:   360,
@@ -141,6 +148,8 @@ func TestCreateQuotasAndDescriptionsRefresh(t *testing.T) {
 		"i-asdasd1": Metric{usage: 5, limit: 10, labelValues: []string{"i-asdasd1", "dummy-value"}, usageDesc: desc},
 	}
 
+	exporter.metricsLock.Lock()
+	defer exporter.metricsLock.Unlock()
 	assert.Equal(t, expectedMetrics, exporter.metrics)
 
 	close(ch) // should panic if it was already closed
