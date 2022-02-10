@@ -38,7 +38,7 @@ func TestUpdateMetrics(t *testing.T) {
 			"i-asdasd1": Metric{usage: 3, limit: 5, labelValues: []string{"before-dummy-value"}},
 			"i-asdasd2": Metric{usage: 2, limit: 2},
 		},
-		metricsLock:     &sync.Mutex,
+		metricsLock:     &sync.Mutex{},
 		includedAWSTags: []string{"dummy-tag"},
 		refreshPeriod:   360,
 	}
@@ -81,7 +81,7 @@ func TestCreateQuotasAndDescriptions(t *testing.T) {
 		metricsRegion:   region,
 		quotasClient:    quotasClient,
 		metrics:         map[string]Metric{},
-		metricsLock:     &sync.Mutex,
+		metricsLock:     &sync.Mutex{},
 		refreshPeriod:   360,
 		waitForMetrics:  ch,
 		includedAWSTags: []string{"dummy-tag", "dummy-tag2"},
@@ -137,7 +137,7 @@ func TestCreateQuotasAndDescriptionsRefresh(t *testing.T) {
 		metrics: map[string]Metric{
 			"i-asdasd1": Metric{usage: 3, limit: 5, labelValues: []string{"before-dummy-value"}, usageDesc: desc},
 		},
-		metricsLock:     &sync.Mutex,
+		metricsLock:     &sync.Mutex{},
 		waitForMetrics:  ch,
 		includedAWSTags: []string{"dummy-tag"},
 		refreshPeriod:   360,
