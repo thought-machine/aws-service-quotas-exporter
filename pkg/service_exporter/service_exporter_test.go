@@ -1,6 +1,7 @@
 package serviceexporter
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
