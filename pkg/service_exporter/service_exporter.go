@@ -2,6 +2,7 @@ package serviceexporter
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ type ServiceQuotasExporter struct {
 	metricsRegion   string
 	quotasClient    servicequotas.QuotasInterface
 	metrics         map[string]Metric
+	metricsLock     *sync.Mutex
 	refreshPeriod   int
 	waitForMetrics  chan struct{}
 	includedAWSTags []string
@@ -48,6 +50,7 @@ func NewServiceQuotasExporter(region, profile string, refreshPeriod int, include
 		metricsRegion:   region,
 		quotasClient:    quotasClient,
 		metrics:         map[string]Metric{},
+		metricsLock:     &sync.Mutex{},
 		refreshPeriod:   refreshPeriod,
 		waitForMetrics:  ch,
 		includedAWSTags: includedAWSTags,
@@ -72,6 +75,9 @@ func (e *ServiceQuotasExporter) createOrUpdateQuotasAndDescriptions(update bool)
 	if err != nil {
 		log.Fatalf("Could not retrieve quotas and limits: %s", err)
 	}
+
+	e.metricsLock.Lock()
+	defer e.metricsLock.Unlock()
 
 	for _, quota := range quotas {
 		key := metricKey(quota)
@@ -129,6 +135,9 @@ func (e *ServiceQuotasExporter) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements the collect function for prometheus collectors
 func (e *ServiceQuotasExporter) Collect(ch chan<- prometheus.Metric) {
+	e.metricsLock.Lock()
+	defer e.metricsLock.Unlock()
+
 	for _, metric := range e.metrics {
 		ch <- prometheus.MustNewConstMetric(metric.limitDesc, prometheus.GaugeValue, metric.limit, metric.labelValues...)
 		ch <- prometheus.MustNewConstMetric(metric.usageDesc, prometheus.GaugeValue, metric.usage, metric.labelValues...)
