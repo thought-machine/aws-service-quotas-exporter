@@ -1,5 +1,5 @@
-# golang:1.13.1-alpine3.10
-FROM golang@sha256:2293e952c79b8b3a987e1e09d48b6aa403d703cef9a8fa316d30ba2918d37367 as builder
+# golang:1.17.8-alpine3.14
+FROM golang@sha256:f12830e38a0234d827b89cae0ed4406e6e683e752aa3d034d7358d635d9bf337 as builder
 
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/go
 
@@ -17,8 +17,8 @@ RUN source ~/.profile && plz test //... --show_all_output
 
 RUN source ~/.profile && plz build //cmd:aws-service-quotas-exporter --show_all_output
 
-# alpine:3.10.3
-FROM alpine@sha256:c19173c5ada610a5989151111163d28a67368362762534d8a8121ce95cf2bd5a
+# alpine:3.14
+FROM alpine@sha256:635f0aa53d99017b38d1a0aa5b2082f7812b03e3cdb299103fe77b5c8a07f1d2
 
 EXPOSE 9090
 
