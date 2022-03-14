@@ -1,7 +1,7 @@
 go_binary(
     name="aws-service-quotas-exporter",
     srcs=["main.go"],
-    static=False,
+    static=True,
     deps=[
         "//pkg/service_exporter:serviceexporter",
         "//third_party/go:prometheus",

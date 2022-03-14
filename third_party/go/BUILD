@@ -20,9 +20,8 @@ go_get(
     name = "prometheus",
     get = "github.com/prometheus/client_golang/...",
     licences = ["apache-2.0"],
-    revision = "v1.7.1",
+    revision = "v1.12.1",
     deps = [
-        ":client_model",
         ":json-iterator",
         ":perks",
         ":procfs",
@@ -37,7 +36,7 @@ go_get(
         ":yaml.v2"
     ],
     hashes = [
-        "a154bd548148a411378f97cc3f1a54f323a93ba9d611207825e0e7c7e5b38dc6",
+        "41e057212108f12130a41cfb1377fcd47aff2e34a288598534c958c6f5be1757",
     ],
 )
 
@@ -147,7 +146,7 @@ go_get(
     name = "protobuf",
     get = "github.com/golang/protobuf/...",
     licences = ["bsd-3-clause"],
-    revision = "v1.4.2",
+    revision = "v1.5.2",
     strip = [
         "proto/proto3_proto",
         "conformance",
@@ -156,7 +155,7 @@ go_get(
         ":protobuf-v2",
     ],
     hashes = [
-        "8ea8625363e0d378b9474383fbb30630f163852bf614b4f4476e5190d5bbbc99",
+        "fb218536e91a77b162467ace973af48948cf2c3503a1b24456e937f683f052fb",
     ],
 )
 
@@ -232,12 +231,12 @@ go_get(
     name = "procfs",
     get = "github.com/prometheus/procfs/...",
     licences = ["apache-2.0"],
-    revision = "v0.1.3",
+    revision = "v0.7.3",
     deps = [
         ":x_sync",
     ],
     hashes = [
-        "05a13e3a105c071f8ce0ae9f1de7b7bfbd446e63dd785c84cdd7f4a303376367",
+        "9185d4ac4ac667819c0ad29508eddf8c96d40394fbb88fc5e9a612be00d387bc",
     ],
 )
 
@@ -427,19 +426,6 @@ go_get(
 )
 
 go_get(
-    name = "client_model",
-    get = "github.com/prometheus/client_model/...",
-    licences = ["apache-2.0"],
-    revision = "v0.2.0",
-    deps = [
-        ":protobuf",
-    ],
-    hashes = [
-        "e94cfec5b0d520d75a418e357b27c6d04350da7639489a677d1e60094184622e",
-    ],
-)
-
-go_get(
     name = "prometheus_common",
     get = "github.com/prometheus/common",
     install = [
@@ -449,16 +435,16 @@ go_get(
         "log",
     ],
     licences = ["apache-2.0"],
-    revision = "v0.10.0",
+    revision = "v0.32.0",
     deps = [
-        ":client_model",
+        ":prometheus",
         ":golang_protobuf_extensions",
         ":kingpin",
         ":logrus",
         ":protobuf",
     ],
     hashes = [
-        "8d3df5d142121396ccab6d8414aad48ed187cd280d00713c925c9dc0c402e6bb",
+        "b8fba87213050ef4d9fa156801b8f9546ff90d5af9334cfbdf73c5faf4fd2fc7",
     ],
 )
 
