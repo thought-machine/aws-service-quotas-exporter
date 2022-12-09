@@ -1,3 +1,5 @@
+// Package serviceexporter implements the logic to export the data collected by
+// the servicequotas package as Prometheus metrics
 package serviceexporter
 
 import (

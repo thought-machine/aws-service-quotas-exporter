@@ -1,3 +1,5 @@
+// Package servicequotas implements logic for retrieving quotas for specific
+// AWS services
 package servicequotas
 
 import (

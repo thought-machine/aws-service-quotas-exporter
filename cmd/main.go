@@ -1,3 +1,4 @@
+// Package main implements the aws-service-quotas-exporter entrypoint
 package main
 
 import (
