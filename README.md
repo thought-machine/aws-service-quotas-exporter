@@ -91,7 +91,7 @@ Example IAM policy
 
 # Options
 
-`plz run //cmd:aws-service-quotas-exporter -- [OPTIONS]`
+`go run cmd:main.go -- [OPTIONS]`
 | Short Flag | Long Flag          | Env var                       | Description                                              |
 |------------|--------------------|----------------------|-------------------------------------------------------------------|
 | -p         | --port             | N/A         | Port on which to serve metrics                                             |
@@ -101,13 +101,11 @@ Example IAM policy
 
 # Building the exporter and running the exporter
 
-## Building the binary with please
-`plz build //cmd:aws-service-quotas-exporter`
-
-`plz run //cmd:aws-service-quotas-exporter -- -p 9090 -r eu-west-1 --profile myprofile --include-aws-tag 'tag1' --include-aws-tag 'tag2'`
+## Building the binary
+`go build -ldflags "-linkmode external -extldflags -static" -o aws-service-quotas-exporter cmd/main.go`
 
 ## Docker image
-`docker build -f build/Dockerfile-builder . --rm=false`
+`docker build -t aws-quotas-exporter -f build/Dockerfile . --rm=false`
 
 Docker images are also available at thoughtmachine/aws-service-quotas-exporter:<version> See https://hub.docker.com/r/thoughtmachine/aws-service-quotas-exporter
 
