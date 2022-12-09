@@ -91,7 +91,7 @@ Example IAM policy
 
 # Options
 
-`go run cmd:main.go -- [OPTIONS]`
+`go run cmd/main.go -- [OPTIONS]`
 | Short Flag | Long Flag          | Env var                       | Description                                              |
 |------------|--------------------|----------------------|-------------------------------------------------------------------|
 | -p         | --port             | N/A         | Port on which to serve metrics                                             |
