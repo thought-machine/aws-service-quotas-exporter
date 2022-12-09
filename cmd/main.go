@@ -1,3 +1,4 @@
+// Package main implements the aws-service-quotas-exporter entrypoint
 package main
 
 import (
@@ -8,7 +9,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	logging "github.com/sirupsen/logrus"
-	"github.com/thought-machine/aws-service-quotas-exporter/pkg/service_exporter/serviceexporter"
+	"github.com/thought-machine/aws-service-quotas-exporter/serviceexporter"
 )
 
 var log = logging.WithFields(logging.Fields{})

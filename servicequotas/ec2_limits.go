@@ -1,13 +1,13 @@
 package servicequotas
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
-	"github.com/pkg/errors"
 )
 
 // Not all quota limits here are reported under "ec2", but all of the
@@ -89,7 +89,7 @@ func (c *RulesPerSecurityGroupUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	return quotaUsages, nil
@@ -126,7 +126,7 @@ func (c *SecurityGroupsPerENIUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	return quotaUsages, nil
@@ -153,7 +153,7 @@ func (c *SecurityGroupsPerRegionUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	usage := []QuotaUsage{
@@ -259,7 +259,7 @@ type StandardSpotInstanceRequestsUsageCheck struct {
 func (c *StandardSpotInstanceRequestsUsageCheck) Usage() ([]QuotaUsage, error) {
 	cpus, err := standardInstancesCPUs(c.client, true)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	usage := []QuotaUsage{
@@ -286,7 +286,7 @@ type RunningOnDemandStandardInstancesUsageCheck struct {
 func (c *RunningOnDemandStandardInstancesUsageCheck) Usage() ([]QuotaUsage, error) {
 	cpus, err := standardInstancesCPUs(c.client, false)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	usage := []QuotaUsage{
@@ -323,7 +323,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 					cidrBlock := *subnet.CidrBlock
 					blockedBits, err := strconv.Atoi(cidrBlock[len(cidrBlock)-2:])
 					if err != nil {
-						conversionErr = errors.Wrapf(ErrFailedToConvertCidr, "%w", err)
+						conversionErr = fmt.Errorf("%w: %s", ErrFailedToConvertCidr, err)
 						// stops paging if strconv experiences an error
 						return true
 					}
@@ -344,7 +344,7 @@ func (c *AvailableIpsPerSubnetUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	if conversionErr != nil {

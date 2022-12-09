@@ -5,22 +5,23 @@ version: 2
 jobs:
   test:
     docker:
-      - image: circleci/golang:1.14
-    working_directory: /go/github.com/thought-machine/aws-service-quotas-exporter
+      - image: cimg/go:1.19.0
+    working_directory: ~/github.com/thought-machine/aws-service-quotas-exporter
     steps:
       - checkout
-      - run: sudo ln -s /usr/local/go/bin/go /usr/local/bin/go
-      - run: curl https://get.please.build | sh
-      - run: go get -u golang.org/x/lint/golint
+      - run: go install github.com/mgechev/revive@v1.2.4
       - run:
           name: "Lint"
-          command: source ~/.profile && plz run parallel --include=lint --show_all_output
+          command: "revive -set_exit_status ./..."
+      - run:
+          name: "vet"
+          command: "go vet ./..."
       - run:
           name: "gofmt check"
-          command: source ~/.profile && plz run parallel --include=gofmt --show_all_output
+          command: "[ -z $(gofmt -l .) ] && exit 0 || exit 1"
       - run:
           name: "Test"
-          command: source ~/.profile && plz test ./... --show_all_output
+          command: "go test ./..."
   build_and_release:
     working_directory: ~/
     machine: true
@@ -40,9 +41,9 @@ jobs:
             pushd aws-service-quotas-exporter
             if [ -z ${CIRCLE_TAG+x} ]
             then
-                docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+                docker build -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
             else
-                docker build -f build/Dockerfile-builder . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
+                docker build -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
             fi
       - run:
           name: Publish Docker Image to Docker Hub

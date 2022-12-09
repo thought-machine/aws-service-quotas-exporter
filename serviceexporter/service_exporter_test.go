@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/thought-machine/aws-service-quotas-exporter/pkg/service_quotas/servicequotas"
+	"github.com/thought-machine/aws-service-quotas-exporter/servicequotas"
 )
 
 func resourceName(name string) *string {

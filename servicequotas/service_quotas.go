@@ -1,6 +1,11 @@
+// Package servicequotas implements logic for retrieving quotas for specific
+// AWS services
 package servicequotas
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -9,7 +14,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	awsservicequotas "github.com/aws/aws-sdk-go/service/servicequotas"
 	"github.com/aws/aws-sdk-go/service/servicequotas/servicequotasiface"
-	"github.com/pkg/errors"
 	logging "github.com/sirupsen/logrus"
 )
 
@@ -107,7 +111,7 @@ type QuotasInterface interface {
 func NewServiceQuotas(region, profile string) (QuotasInterface, error) {
 	validRegion, isChina := isValidRegion(region)
 	if !validRegion {
-		return nil, errors.Wrapf(ErrInvalidRegion, "failed to create ServiceQuotas")
+		return nil, fmt.Errorf("%w: failed to create ServiceQuotas", ErrInvalidRegion)
 	}
 
 	opts := session.Options{}
@@ -176,7 +180,7 @@ func (s *ServiceQuotas) quotasForService(service string) ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToListQuotas, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToListQuotas, err)
 	}
 
 	if usageErr != nil {
