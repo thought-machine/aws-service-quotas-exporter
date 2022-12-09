@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	logging "github.com/sirupsen/logrus"
 	"github.com/thought-machine/aws-service-quotas-exporter/servicequotas"
@@ -42,7 +41,7 @@ type ServiceQuotasExporter struct {
 func NewServiceQuotasExporter(region, profile string, refreshPeriod int, includedAWSTags []string) (*ServiceQuotasExporter, error) {
 	quotasClient, err := servicequotas.NewServiceQuotas(region, profile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%w")
+		return nil, err
 	}
 
 	ch := make(chan struct{})

@@ -1,11 +1,11 @@
 package servicequotas
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/autoscaling"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

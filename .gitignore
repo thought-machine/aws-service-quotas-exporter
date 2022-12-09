@@ -2,6 +2,8 @@
 plz-out
 .plzconfig.local
 *.swp
+*.swn
+*.swo
 
 # Binaries for programs and plugins
 *.exe

@@ -1,9 +1,10 @@
 package servicequotas
 
 import (
+	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/autoscaling"
 	"github.com/aws/aws-sdk-go/service/autoscaling/autoscalingiface"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -50,7 +51,7 @@ func (c *ASGUsageCheck) Usage() ([]QuotaUsage, error) {
 		},
 	)
 	if err != nil {
-		return nil, errors.Wrapf(ErrFailedToGetUsage, "%w", err)
+		return nil, fmt.Errorf("%w: %s", ErrFailedToGetUsage, err)
 	}
 
 	return quotaUsages, nil
