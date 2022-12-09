@@ -6,7 +6,7 @@ jobs:
   test:
     docker:
       - image: cimg/go:1.19.0
-    working_directory: /go/github.com/thought-machine/aws-service-quotas-exporter
+    working_directory: ~/github.com/thought-machine/aws-service-quotas-exporter
     steps:
       - checkout
       - run: go install github.com/mgechev/revive@v1.2.4
