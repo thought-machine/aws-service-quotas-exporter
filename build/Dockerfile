@@ -21,6 +21,7 @@ FROM scratch
 
 EXPOSE 9090
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/github.com/thought-machine/aws-service-quotas-exporter/aws-service-quotas-exporter /home/app/aws-service-quotas-exporter
 
 COPY --from=0 /etc/passwd /etc/passwd
