@@ -49,13 +49,13 @@ jobs:
             fi
 workflows:
   version: 2
-  build-master:
+  build-main:
     jobs:
       - build_and_release:
           context: conntest-dockerhub-release
           filters:
             branches:
-              only: master
+              only: main
   build-tag:
     jobs:
       - build_and_release:
