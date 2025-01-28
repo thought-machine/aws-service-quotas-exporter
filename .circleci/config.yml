@@ -36,24 +36,16 @@ jobs:
                 git clone --branch "${CIRCLE_TAG}" --depth 1 "${CIRCLE_REPOSITORY_URL}"
             fi
       - run:
-          name: Build Docker Image
+          name: Build Docker Image and Push to Docker Hub
           command: |
             pushd aws-service-quotas-exporter
-            if [ -z ${CIRCLE_TAG+x} ]
-            then
-                docker build -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
-            else
-                docker build -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
-            fi
-      - run:
-          name: Publish Docker Image to Docker Hub
-          command: |
             echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+
             if [ -z ${CIRCLE_TAG+x} ]
             then
-                docker push thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1"
+                docker buildx build --platform linux/amd64,linux/arm64 -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_SHA1" --push
             else
-                docker push thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG"
+                docker buildx build --platform linux/amd64,linux/arm64 -f build/Dockerfile . --rm=false -t thoughtmachine/aws-service-quotas-exporter:"$CIRCLE_TAG" --push
             fi
 workflows:
   version: 2
