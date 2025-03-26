@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.258
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/prometheus/client_golang v1.15.1
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.2
 )
 
