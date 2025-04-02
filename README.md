@@ -92,12 +92,12 @@ Example IAM policy
 # Options
 
 `go run cmd/main.go -- [OPTIONS]`
-| Short Flag | Long Flag          | Env var                       | Description                                              |
-|------------|--------------------|----------------------|-------------------------------------------------------------------|
-| -p         | --port             | N/A         | Port on which to serve metrics                                             |
-| -r         | --region           | AWS_REGION  | AWS region                                                                 |
-| -f         | --profile          | AWS_PROFILE | Named AWS profile                                                          |
-| N/A        | --include-aws-tag  | N/A         | The aws resource tags to include as labels for returned metrics            |
+| Short Flag | Long Flag          | Env var     | Description                                                                                                                                  |
+|------------|--------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| -p         | --port             | N/A         | Port on which to serve metrics                                                                                                               |
+| -r         | --region           | AWS_REGION  | AWS region                                                                                                                                   |
+| -f         | --profile          | AWS_PROFILE | Named AWS profile                                                                                                                            |                                                                          
+| N/A        | --include-aws-tag  | N/A         | The aws resource tag to include as labels for returned metrics. Multiple tags can be specified with multiple `--include-aws-tag` arguments.  |
 
 # Building the exporter and running the exporter
 
