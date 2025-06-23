@@ -1,7 +1,5 @@
-# golang:1.19.4-alpine3.17
-FROM golang@sha256:f33331e12ca70192c0dbab2d0a74a52e1dd344221507d88aaea605b0219a212f as builder
+FROM --platform=$BUILDPLATFORM golang:1.22-alpine AS builder
 
-ARG TARGETOS
 ARG TARGETARCH
 
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/go
@@ -12,7 +10,7 @@ WORKDIR /go/github.com/thought-machine/aws-service-quotas-exporter
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o aws-service-quotas-exporter cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -o aws-service-quotas-exporter cmd/main.go
 
 # Max user
 RUN addgroup -g 255999 -S app && \
