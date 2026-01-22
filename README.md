@@ -1,4 +1,15 @@
+# ⚠️ Maintenance Status: Unmaintained
+
+This repository is no longer maintained.
+
+We're no longer using this tool internally, so we won't be making further updates.
+We may review issues, or respond to pull requests but we can not promise any timelines.
+The code remains available for reference and for anyone who wishes to fork and continue development.
+
+If you’d like to take over maintenance, feel free to fork the repo and publish your own maintained version.
+
 # AWS Service Quotas Exporter
+
 The aws-service-quotas-exporter exports [AWS service quotas][1] and
 usage as [Prometheus][2] metrics. This exporter only uses the service
 quotas API and has custom implementation for each usage metric.
